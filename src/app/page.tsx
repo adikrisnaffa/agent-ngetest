@@ -4,13 +4,16 @@ import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar"
 import SidebarContent from "@/components/dashboard/sidebar-content";
 import MainDashboard from "@/components/dashboard/main-dashboard";
 import NodePalette from "@/components/dashboard/node-palette";
+import AuthenticationView from "@/components/dashboard/authentication-view";
+import ScanConfigView from "@/components/dashboard/scan-config-view";
+import TestSettingsView from "@/components/dashboard/test-settings-view";
 
 // Placeholder component for other views
 const PlaceholderView = ({ title }: { title: string }) => (
-  <div className="flex h-full w-full items-center justify-center">
-    <div className="text-center">
+  <div className="flex h-full w-full items-center justify-center p-8">
+    <div className="text-center bg-card border rounded-lg p-8 w-full max-w-2xl">
       <h1 className="text-3xl font-bold">{title}</h1>
-      <p className="text-muted-foreground">This view is under construction.</p>
+      <p className="text-muted-foreground mt-2">Konten untuk halaman ini sedang dalam tahap pengembangan.</p>
     </div>
   </div>
 );
@@ -23,11 +26,14 @@ export default function Home() {
     switch(activeView) {
       case "Flow Builder":
         return <MainDashboard />;
-      case "Configuration":
       case "Authentication":
+        return <AuthenticationView />;
       case "Scan Config":
-      case "Repository":
+        return <ScanConfigView />;
       case "Test Settings":
+        return <TestSettingsView />;
+      case "Configuration":
+      case "Repository":
         return <PlaceholderView title={activeView} />;
       default:
         return <MainDashboard />;
