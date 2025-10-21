@@ -5,14 +5,16 @@ import NodePalette from "@/components/dashboard/node-palette";
 
 export default function Home() {
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarContent />
-      </Sidebar>
-      <NodePalette />
-      <SidebarInset>
-        <MainDashboard />
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="flex h-screen w-full">
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarContent />
+        </Sidebar>
+        <NodePalette />
+        <SidebarInset>
+          <MainDashboard />
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   );
 }

@@ -1,40 +1,18 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Pencil } from "lucide-react";
 import FlowStep from "./flow-step";
 import React from "react";
 import { Card } from "../ui/card";
+import type { Step } from "./main-dashboard";
 
-export default function FlowCanvas() {
-  const steps = [
-    {
-      id: 1,
-      title: "User Login",
-      actions: [
-        { type: "Navigate", detail: "to /login" },
-        { type: "Type", detail: "'testuser' in Username" },
-        { type: "Type", detail: "'password' in Password" },
-        { type: "Click", detail: "Login Button" },
-      ],
-    },
-    {
-      id: 2,
-      title: "Assert Login",
-      actions: [
-        { type: "Assert", detail: "URL is /dashboard" },
-        { type: "Assert", detail: "Welcome message is visible"},
-      ],
-    },
-    {
-      id: 3,
-      title: "Add Product",
-      actions: [
-        { type: "Click", detail: "Product 'Automation'" },
-        { type: "Click", detail: "Add to Cart Button" },
-        { type: "Assert", detail: "Cart count is 1" },
-      ],
-    },
-  ];
+interface FlowCanvasProps {
+    steps: Step[];
+    onStepSelect: (step: Step) => void;
+    selectedStepId: number | null;
+}
 
+export default function FlowCanvas({ steps, onStepSelect, selectedStepId }: FlowCanvasProps) {
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex items-center justify-between flex-shrink-0">
@@ -58,11 +36,13 @@ export default function FlowCanvas() {
                 <Card className="p-4 bg-background border-primary border-2 shadow-lg">
                     <p className="text-lg font-semibold flex items-center gap-2"><ArrowRight className="text-primary"/> Start</p>
                 </Card>
-              {steps.map((step, index) => (
+              {steps.map((step) => (
                 <React.Fragment key={step.id}>
                     <div className="flex items-center gap-8">
                         <div className="w-16 h-1 bg-border rounded-full" />
-                        <FlowStep {...step} />
+                        <div onClick={() => onStepSelect(step)}>
+                            <FlowStep {...step} isSelected={selectedStepId === step.id} />
+                        </div>
                     </div>
                 </React.Fragment>
               ))}
