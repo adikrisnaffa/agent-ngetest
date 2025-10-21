@@ -19,7 +19,8 @@ interface FlowCanvasProps {
 const DropZone = ({ onDrop }: { onDrop: () => void }) => {
     const [isOver, setIsOver] = useState(false);
     return (
-        <div
+        <div 
+            className="relative h-20 w-8 flex items-center justify-center"
             onDragOver={(e) => {
                 e.preventDefault();
                 setIsOver(true);
@@ -27,15 +28,20 @@ const DropZone = ({ onDrop }: { onDrop: () => void }) => {
             onDragLeave={() => setIsOver(false)}
             onDrop={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 setIsOver(false);
                 onDrop();
             }}
-            className={cn(
-                "w-16 h-20 transition-all",
-                isOver ? "bg-primary/20 scale-y-150" : "bg-border/20",
-                "rounded-full"
-            )}
-        />
+        >
+            <div className={cn(
+                "h-0.5 w-full bg-border transition-colors",
+                isOver && "bg-primary"
+            )}/>
+            <div className={cn(
+                "absolute h-12 w-12 rounded-full transition-all",
+                isOver && "bg-primary/20 scale-150"
+            )}/>
+        </div>
     )
 }
 
@@ -92,13 +98,18 @@ export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddS
         ) : (
           <div className="absolute inset-0 overflow-auto p-8">
             <div className="flex items-center gap-2">
-                <Card 
-                    className="p-4 bg-background border-primary border-2 shadow-lg"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleStepDrop(0)}
+                <div 
+                  onDragOver={(e) => e.preventDefault()} 
+                  onDrop={(e) => {
+                    e.stopPropagation();
+                    handleStepDrop(0);
+                  }}
                 >
-                    <p className="text-lg font-semibold flex items-center gap-2"><ArrowRight className="text-primary"/> Start</p>
-                </Card>
+                  <Card className="p-4 bg-background border-primary border-2 shadow-lg">
+                      <p className="text-lg font-semibold flex items-center gap-2"><ArrowRight className="text-primary"/> Start</p>
+                  </Card>
+                </div>
+
               {steps.map((step) => (
                 <React.Fragment key={step.id}>
                     <div className="flex items-center gap-2">
