@@ -9,7 +9,7 @@ interface ActionCardProps {
 
 export default function ActionCard({ name, icon: Icon, description }: ActionCardProps) {
   return (
-    <Card className="cursor-move hover:bg-primary/10 hover:border-primary transition-colors group bg-transparent">
+    <Card className="cursor-move hover:bg-card/60 hover:border-primary transition-colors group bg-transparent">
       <CardContent className="p-3 flex flex-col items-center justify-center text-center">
         <Icon className="h-6 w-6 mb-2 text-primary" />
         <p className="font-medium text-sm">{name}</p>

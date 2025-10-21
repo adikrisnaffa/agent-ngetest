@@ -38,11 +38,11 @@ export default function FlowCanvas() {
         </div>
       </div>
       
-      <div className="relative border-2 border-dashed border-border rounded-lg p-8 min-h-[60vh]">
+      <div className="relative border-2 border-dashed border-border rounded-lg p-8 min-h-[70vh]">
         {steps.length === 0 ? (
-           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+           <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground">
              <p className="text-lg font-medium">Your flow is empty</p>
-             <p>Drag & drop actions from the sidebar to build your test case.</p>
+             <p>Drag & drop actions from the node palette to build your test case.</p>
            </div>
         ) : (
           <div className="flex flex-col items-center gap-8 pt-8">

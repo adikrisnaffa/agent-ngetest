@@ -2,85 +2,57 @@ import {
   SidebarHeader,
   SidebarContent as SidebarBody,
   SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import ActionCard from "./action-card";
-import { Bot, Plus, Settings, LifeBuoy, MousePointerClick, Type, Search, Forward } from "lucide-react";
+import { Bot, LifeBuoy, Settings, KeyRound, Workflow, ScanLine, FolderGit2, TestTube, ChevronsRight } from "lucide-react";
 
 export default function SidebarContent() {
-  const actions = [
-    { name: "Click", icon: MousePointerClick, description: "Click an element" },
-    { name: "Type", icon: Type, description: "Type some text" },
-    { name: "Assert", icon: Search, description: "Assert an element" },
-    { name: "Navigate", icon: Forward, description: "Go to a URL" },
+  const navItems = [
+    { name: "Configuration", icon: Settings },
+    { name: "Authentication", icon: KeyRound },
+    { name: "Flow Builder", icon: Workflow },
+    { name: "Scan Config", icon: ScanLine },
+    { name: "Repository", icon: FolderGit2 },
+    { name: "Test Settings", icon: TestTube },
   ];
 
   return (
     <div className="flex flex-col h-full">
       <SidebarHeader className="p-4 border-b">
-         <div className="flex items-center gap-2">
-            <Bot className="h-6 w-6 text-primary" />
-            <h1 className="text-lg font-semibold tracking-wider">Aent</h1>
+         <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                <Bot className="h-6 w-6 text-primary" />
+                <h1 className="text-lg font-semibold tracking-wider group-data-[collapsible=icon]:hidden">Aent</h1>
+            </div>
+            <Button variant="ghost" size="icon" className="h-7 w-7 group-data-[collapsible=icon]:hidden">
+                <ChevronsRight className="h-5 w-5" />
+            </Button>
          </div>
       </SidebarHeader>
-      <SidebarBody className="p-0">
-        <Accordion type="multiple" defaultValue={['item-1', 'item-2']} className="w-full">
-          <AccordionItem value="item-1" className="border-b-0">
-            <div className="px-4 py-2">
-              <AccordionTrigger className="py-2 hover:no-underline">
-                <h3 className="font-semibold text-base">Object Repository</h3>
-              </AccordionTrigger>
-            </div>
-            <AccordionContent className="px-4 pb-4">
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full bg-transparent">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Object
-                </Button>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex justify-between items-center rounded-md p-2 hover:bg-muted/50 transition-colors">
-                    <span>Login Button</span>
-                    <Badge variant="secondary">button</Badge>
-                  </div>
-                  <div className="flex justify-between items-center rounded-md p-2 hover:bg-muted/50 transition-colors">
-                    <span>Username Input</span>
-                    <Badge variant="secondary">input</Badge>
-                  </div>
-                  <div className="flex justify-between items-center rounded-md p-2 hover:bg-muted/50 transition-colors">
-                    <span>Add to Cart</span>
-                    <Badge variant="secondary">button</Badge>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="item-2" className="border-b-0">
-            <div className="px-4 py-2">
-                <AccordionTrigger className="py-2 hover:no-underline">
-                    <h3 className="font-semibold text-base">Actions</h3>
-                </AccordionTrigger>
-            </div>
-            <AccordionContent className="px-4 pb-4">
-              <div className="grid grid-cols-2 gap-3">
-                {actions.map((action) => (
-                  <ActionCard key={action.name} {...action} />
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+      <SidebarBody>
+        <SidebarMenu>
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.name}>
+              <SidebarMenuButton tooltip={item.name} isActive={item.name === 'Flow Builder'}>
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
       </SidebarBody>
-      <SidebarFooter className="mt-auto border-t p-4 space-y-2">
-          <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground">
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-          </Button>
-          <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground">
-              <LifeBuoy className="h-4 w-4" />
-              <span>Help & Support</span>
-          </Button>
+      <SidebarFooter className="mt-auto border-t p-2">
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Help & Support">
+                    <LifeBuoy className="h-5 w-5" />
+                    <span>Help & Support</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </div>
   );
