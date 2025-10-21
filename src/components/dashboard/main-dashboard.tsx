@@ -91,6 +91,27 @@ export default function MainDashboard() {
     }
   };
 
+  const handleMoveStep = (draggedId: number, targetId: number) => {
+    setSteps(prevSteps => {
+        const draggedStep = prevSteps.find(step => step.id === draggedId);
+        if (!draggedStep) return prevSteps;
+
+        const remainingSteps = prevSteps.filter(step => step.id !== draggedId);
+        const targetIndex = remainingSteps.findIndex(step => step.id === targetId);
+
+        // If dropping on a step, insert after it.
+        // If dropping on the start card, insert at the beginning.
+        const newIndex = targetId === 0 ? 0 : targetIndex + 1;
+
+        if (newIndex >= 0 && newIndex <= remainingSteps.length) {
+            remainingSteps.splice(newIndex, 0, draggedStep);
+            return remainingSteps;
+        }
+        
+        return prevSteps; // Should not happen
+    });
+  };
+
   const handleRunTest = () => {
     // Simulate test run
     let currentStepIndex = 0;
@@ -267,6 +288,7 @@ export default function MainDashboard() {
                     selectedStepId={selectedStep?.id ?? null}
                     onAddStep={handleAddStep}
                     onDeleteStep={handleDeleteStep}
+                    onMoveStep={handleMoveStep}
                 />
             </div>
             <PropertiesPanel 
