@@ -18,7 +18,7 @@ export default function Header() {
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
-        <h1 className="text-xl font-semibold tracking-wider">Flow Builder</h1>
+        <h1 className="text-xl font-semibold tracking-wider">Automation Aent</h1>
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-4">
