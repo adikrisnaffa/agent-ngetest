@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import FlowStep from "./flow-step";
+import React from "react";
 
 export default function FlowCanvas() {
   const steps = [
@@ -46,12 +47,12 @@ export default function FlowCanvas() {
         ) : (
           <div className="flex flex-col items-center gap-8 pt-8">
             {steps.map((step, index) => (
-              <>
-                <FlowStep key={step.id} {...step} />
+              <React.Fragment key={step.id}>
+                <FlowStep {...step} />
                 {index < steps.length - 1 && (
                     <div className="w-px h-8 bg-border"></div>
                 )}
-              </>
+              </React.Fragment>
             ))}
           </div>
         )}
