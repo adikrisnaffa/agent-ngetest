@@ -1,3 +1,5 @@
+"use client";
+
 import ActionCard from "./action-card";
 import { MousePointerClick, Type, Search, Forward, Plus, FilePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";

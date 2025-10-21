@@ -10,9 +10,25 @@ interface FlowCanvasProps {
     steps: Step[];
     onStepSelect: (step: Step) => void;
     selectedStepId: number | null;
+    onAddStep: (type: string) => void;
 }
 
-export default function FlowCanvas({ steps, onStepSelect, selectedStepId }: FlowCanvasProps) {
+export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddStep }: FlowCanvasProps) {
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData("application/reactflow");
+    if (typeof type === "undefined" || !type) {
+      return;
+    }
+    onAddStep(type);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex items-center justify-between flex-shrink-0">
@@ -24,7 +40,11 @@ export default function FlowCanvas({ steps, onStepSelect, selectedStepId }: Flow
         </div>
       </div>
       
-      <div className="relative flex-1 rounded-lg dot-grid border">
+      <div 
+        className="relative flex-1 rounded-lg dot-grid border"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      >
         {steps.length === 0 ? (
            <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground">
              <p className="text-lg font-medium">Your flow is empty</p>

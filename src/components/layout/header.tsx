@@ -13,7 +13,11 @@ import placeholderImages from "@/lib/placeholder-images.json";
 
 const userAvatar = placeholderImages.placeholderImages.find(p => p.id === 'user-avatar');
 
-export default function Header() {
+interface HeaderProps {
+    onRun: () => void;
+}
+
+export default function Header({ onRun }: HeaderProps) {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8">
       <div className="flex items-center gap-2">
@@ -23,7 +27,7 @@ export default function Header() {
 
       <div className="flex flex-1 items-center justify-end gap-4">
         <div className="flex items-center gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={onRun}>
                 <Play className="mr-2 h-4 w-4" />
                 Run
             </Button>

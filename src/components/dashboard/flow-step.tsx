@@ -1,15 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, MoreVertical, Trash2, Workflow } from "lucide-react";
+import { GripVertical, MoreVertical, Trash2, Workflow, CheckCircle, XCircle, Loader } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { Step } from './main-dashboard';
 
-interface FlowStepProps {
-  id: number;
-  title: string;
-  actions: { type: string; detail: string }[];
-  isSelected?: boolean;
-}
 
 const getActionClasses = (type: string) => {
     switch(type.toLowerCase()){
@@ -21,15 +16,34 @@ const getActionClasses = (type: string) => {
     }
 }
 
-export default function FlowStep({ title, actions, isSelected }: FlowStepProps) {
+const getStatusIcon = (status: Step['status']) => {
+    switch(status) {
+        case 'running': return <Loader className="h-5 w-5 text-blue-500 animate-spin" />;
+        case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
+        case 'error': return <XCircle className="h-5 w-5 text-destructive" />;
+        default: return <Workflow className="h-5 w-5 text-primary"/>;
+    }
+}
+
+const getStatusClasses = (status: Step['status'], isSelected: boolean | undefined) => {
+    if (isSelected) return "border-primary ring-2 ring-primary";
+    switch(status) {
+        case 'running': return "border-blue-500 ring-2 ring-blue-500/50";
+        case 'success': return "border-green-500";
+        case 'error': return "border-destructive";
+        default: return "border-border/60 hover:border-primary";
+    }
+}
+
+export default function FlowStep({ title, actions, isSelected, status = 'idle' }: Step & { isSelected?: boolean }) {
   return (
     <Card className={cn(
-        "w-80 shadow-lg bg-card/80 backdrop-blur-sm border-border/60 hover:border-primary transition-colors group cursor-pointer",
-        isSelected && "border-primary ring-2 ring-primary"
+        "w-80 shadow-lg bg-card/80 backdrop-blur-sm transition-all duration-300 group cursor-pointer",
+        getStatusClasses(status, isSelected)
     )}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 border-b">
         <div className="flex items-center gap-2">
-            <Workflow className="h-5 w-5 text-primary"/>
+            {getStatusIcon(status)}
           <CardTitle className="text-base font-medium">{title}</CardTitle>
         </div>
         <div className="flex items-center">
