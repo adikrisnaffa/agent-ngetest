@@ -9,7 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bot, LifeBuoy, Settings, KeyRound, Workflow, ScanLine, FolderGit2, TestTube, ChevronsRight } from "lucide-react";
 
-export default function SidebarContent() {
+interface SidebarContentProps {
+  activeView: string;
+  setActiveView: (view: string) => void;
+}
+
+export default function SidebarContent({ activeView, setActiveView }: SidebarContentProps) {
   const navItems = [
     { name: "Configuration", icon: Settings },
     { name: "Authentication", icon: KeyRound },
@@ -36,7 +41,11 @@ export default function SidebarContent() {
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.name}>
-              <SidebarMenuButton tooltip={item.name} isActive={item.name === 'Flow Builder'}>
+              <SidebarMenuButton 
+                tooltip={item.name} 
+                isActive={activeView === item.name}
+                onClick={() => setActiveView(item.name)}
+              >
                 <item.icon className="h-5 w-5" />
                 <span>{item.name}</span>
               </SidebarMenuButton>
