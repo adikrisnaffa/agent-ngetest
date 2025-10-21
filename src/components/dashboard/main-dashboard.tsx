@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Globe, Play } from "lucide-react";
+import { Globe, Play, RefreshCw } from "lucide-react";
 
 export type Step = {
   id: number;
@@ -57,6 +57,8 @@ const initialSteps: Step[] = [
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>(initialSteps);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
+  const [inspectorUrl, setInspectorUrl] = useState("https://example.com");
+  const [loadedUrl, setLoadedUrl] = useState("");
 
   const handleAddStep = (type: string) => {
     const newStep: Step = {
@@ -74,7 +76,6 @@ export default function MainDashboard() {
     setSteps(steps.map(step => step.id === updatedStep.id ? updatedStep : step));
     setSelectedStep(updatedStep);
   };
-
 
   const handleRunTest = () => {
     // Simulate test run
@@ -115,6 +116,18 @@ export default function MainDashboard() {
     setSteps(prev => prev.map(s => ({...s, status: 'idle'})))
     setTimeout(runNextStep, 500);
   }
+  
+  const handleLoadInspector = () => {
+    // A simple trick to force iframe reload even if the URL is the same
+    setLoadedUrl(""); 
+    setTimeout(() => {
+        let urlToLoad = inspectorUrl;
+        if (!urlToLoad.startsWith('http')) {
+            urlToLoad = 'https://' + urlToLoad;
+        }
+        setLoadedUrl(urlToLoad);
+    }, 100);
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -144,18 +157,32 @@ export default function MainDashboard() {
             />
           </TabsContent>
           <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-                <Input placeholder="https://example.com" />
-                <Button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+                <Input 
+                    placeholder="https://example.com" 
+                    value={inspectorUrl}
+                    onChange={(e) => setInspectorUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLoadInspector()}
+                />
+                <Button onClick={handleLoadInspector}>
                     <Globe className="mr-2 h-4 w-4" />
                     Load Page
                 </Button>
+                <Button variant="outline" size="icon" onClick={handleLoadInspector} disabled={!loadedUrl}>
+                    <RefreshCw className="h-4 w-4" />
+                </Button>
             </div>
-            <div className="flex-1 border rounded-lg bg-muted/20 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                    <p className="font-medium">Web Inspector</p>
-                    <p className="text-sm">Enter a URL and click "Load Page" to begin inspecting elements.</p>
-                </div>
+            <div className="flex-1 border rounded-lg bg-muted/20 overflow-hidden">
+                {loadedUrl ? (
+                    <iframe src={loadedUrl} className="w-full h-full" title="Web Inspector" />
+                ) : (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center text-muted-foreground">
+                            <p className="font-medium">Web Inspector</p>
+                            <p className="text-sm">Enter a URL and click "Load Page" to begin inspecting elements.</p>
+                        </div>
+                    </div>
+                )}
             </div>
           </TabsContent>
         </Tabs>
