@@ -4,19 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Workflow } from "lucide-react";
 import type { Step } from "./main-dashboard";
+import { useState, useEffect } from "react";
 
 interface PropertiesPanelProps {
   selectedStep: Step | null;
   onClose: () => void;
+  onSave: (step: Step) => void;
 }
 
-function renderConfigForStep(step: Step) {
+function ConfigForm({ step, onFieldChange }: { step: Step, onFieldChange: (field: string, value: string) => void }) {
     if (step.type.toLowerCase() === 'group') {
         return (
             <div className="space-y-4">
                 <div>
                     <Label htmlFor="step-name">Step Name</Label>
-                    <Input id="step-name" defaultValue={step.title} />
+                    <Input 
+                      id="step-name" 
+                      value={step.title}
+                      onChange={(e) => onFieldChange('title', e.target.value)}
+                    />
                 </div>
                 <p className="text-sm text-muted-foreground">This is a group of actions. Configuration for individual actions will be available soon.</p>
             </div>
@@ -31,18 +37,55 @@ function renderConfigForStep(step: Step) {
                 <Input id="node-type" value={step.type} disabled />
             </div>
             <div>
+                <Label htmlFor="node-title">Node Title</Label>
+                <Input 
+                  id="node-title" 
+                  value={step.title} 
+                  onChange={(e) => onFieldChange('title', e.target.value)}
+                />
+            </div>
+            <div>
                 <Label htmlFor="node-details">Details</Label>
-                <Input id="node-details" defaultValue={step.actions[0]?.detail || ''} />
+                <Input 
+                  id="node-details" 
+                  value={step.actions[0]?.detail || ''} 
+                  onChange={(e) => onFieldChange('detail', e.target.value)}
+                />
             </div>
         </div>
     )
 }
 
-export default function PropertiesPanel({ selectedStep, onClose }: PropertiesPanelProps) {
+export default function PropertiesPanel({ selectedStep, onClose, onSave }: PropertiesPanelProps) {
+  const [currentStep, setCurrentStep] = useState<Step | null>(selectedStep);
+
+  useEffect(() => {
+    setCurrentStep(selectedStep);
+  }, [selectedStep]);
+
+  const handleFieldChange = (field: string, value: string) => {
+    if (currentStep) {
+        if (field === 'title') {
+            setCurrentStep({ ...currentStep, title: value });
+        } else if (field === 'detail') {
+            const newActions = [...currentStep.actions];
+            newActions[0] = { ...newActions[0], detail: value };
+            setCurrentStep({ ...currentStep, actions: newActions });
+        }
+    }
+  };
+
+  const handleSaveChanges = () => {
+    if (currentStep) {
+      onSave(currentStep);
+      onClose();
+    }
+  };
+
   return (
     <div className={`transition-all duration-300 ease-in-out ${selectedStep ? 'w-96 ml-8' : 'w-0'}`}>
         <div className={`bg-background border-l h-full ${selectedStep ? 'block' : 'hidden'} overflow-hidden rounded-lg`}>
-            {selectedStep && (
+            {currentStep && (
                 <div className="flex flex-col h-full">
                     <header className="p-4 border-b flex items-center justify-between flex-shrink-0">
                         <div className="flex items-center gap-2">
@@ -54,10 +97,10 @@ export default function PropertiesPanel({ selectedStep, onClose }: PropertiesPan
                         </Button>
                     </header>
                     <div className="flex-1 p-6 space-y-6 overflow-auto">
-                        {renderConfigForStep(selectedStep)}
+                        <ConfigForm step={currentStep} onFieldChange={handleFieldChange} />
                     </div>
                      <footer className="p-4 border-t mt-auto">
-                        <Button className="w-full">Save Changes</Button>
+                        <Button className="w-full" onClick={handleSaveChanges}>Save Changes</Button>
                     </footer>
                 </div>
             )}

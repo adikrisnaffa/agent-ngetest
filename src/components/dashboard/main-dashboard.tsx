@@ -60,44 +60,53 @@ export default function MainDashboard() {
 
   const handleAddStep = (type: string) => {
     const newStep: Step = {
-        id: steps.length + 1,
+        id: Date.now(), // Use a more unique ID
         title: `${type} Step`,
         type: type,
         actions: [{ type: type, detail: `Configure this ${type} action` }],
         status: 'idle'
     };
     setSteps([...steps, newStep]);
+    setSelectedStep(newStep); // Select the new step
   }
+
+  const handleUpdateStep = (updatedStep: Step) => {
+    setSteps(steps.map(step => step.id === updatedStep.id ? updatedStep : step));
+    setSelectedStep(updatedStep);
+  };
+
 
   const handleRunTest = () => {
     // Simulate test run
-    let currentStep = 0;
+    let currentStepIndex = 0;
     
     const runNextStep = () => {
-        if (currentStep >= steps.length) {
+        if (currentStepIndex >= steps.length) {
             // Reset all to idle after a short delay
             setTimeout(() => setSteps(prev => prev.map(s => ({...s, status: 'idle'}))), 1000);
             return;
         }
 
+        const currentStepId = steps[currentStepIndex].id;
+
         // Set current step to running
-        setSteps(prev => prev.map(s => s.id === steps[currentStep].id ? {...s, status: 'running'} : s));
+        setSteps(prev => prev.map(s => s.id === currentStepId ? {...s, status: 'running'} : s));
 
         setTimeout(() => {
             const isSuccess = Math.random() > 0.2; // 80% chance of success
             setSteps(prev => prev.map(s => {
-                if (s.id === steps[currentStep].id) {
+                if (s.id === currentStepId) {
                     return {...s, status: isSuccess ? 'success' : 'error' };
                 }
                 return s;
             }));
 
             if(isSuccess) {
-                currentStep++;
+                currentStepIndex++;
                 runNextStep();
             } else {
-                 // Stop on error and reset others
-                 setTimeout(() => setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s)), 1000);
+                 // Stop on error and reset others not yet run
+                 setSteps(prev => prev.map(s => (s.status !== 'success' && s.status !== 'error') ? {...s, status: 'idle'} : s));
             }
         }, 1000); // 1 second per step
     }
@@ -127,7 +136,12 @@ export default function MainDashboard() {
                     onAddStep={handleAddStep}
                 />
             </div>
-            <PropertiesPanel selectedStep={selectedStep} onClose={() => setSelectedStep(null)} />
+            <PropertiesPanel 
+              key={selectedStep?.id} // Add key to re-mount component on selection change
+              selectedStep={selectedStep} 
+              onClose={() => setSelectedStep(null)}
+              onSave={handleUpdateStep}
+            />
           </TabsContent>
           <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
             <div className="flex items-center gap-2">
