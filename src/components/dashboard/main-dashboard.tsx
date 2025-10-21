@@ -5,9 +5,8 @@ import FlowCanvas from "@/components/dashboard/flow-canvas";
 import PropertiesPanel from "./properties-panel";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
-import { Globe, Play, RefreshCw, Loader2 } from "lucide-react";
+import InspectorPanel from "./inspector-panel";
+import { Loader2 } from "lucide-react";
 import { fetchUrlContent } from "@/app/actions";
 
 export type Step = {
@@ -121,16 +120,19 @@ export default function MainDashboard() {
     setTimeout(runNextStep, 500);
   }
   
-  const handleLoadInspector = async () => {
-    if (!inspectorUrl) return;
+  const handleLoadInspector = async (url?: string) => {
+    const urlToLoad = url || inspectorUrl;
+    if (!urlToLoad) return;
+
     setIsLoading(true);
     setIframeContent(null);
     try {
-        let urlToLoad = inspectorUrl;
-        if (!urlToLoad.startsWith('http')) {
-            urlToLoad = 'https://' + urlToLoad;
+        let finalUrl = urlToLoad;
+        if (!finalUrl.startsWith('http')) {
+            finalUrl = 'https://' + finalUrl;
         }
-        const content = await fetchUrlContent(urlToLoad);
+        setInspectorUrl(finalUrl);
+        const content = await fetchUrlContent(finalUrl);
         setIframeContent(content);
     } catch (error) {
         console.error("Failed to fetch content:", error);
@@ -168,22 +170,14 @@ export default function MainDashboard() {
             />
           </TabsContent>
           <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
-            <div className="flex items-center gap-2 flex-shrink-0">
-                <Input 
-                    placeholder="https://example.com" 
-                    value={inspectorUrl}
-                    onChange={(e) => setInspectorUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleLoadInspector()}
-                    disabled={isLoading}
-                />
-                <Button onClick={handleLoadInspector} disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
-                    Load Page
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleLoadInspector} disabled={!iframeContent || isLoading}>
-                    <RefreshCw className="h-4 w-4" />
-                </Button>
-            </div>
+            <InspectorPanel 
+              url={inspectorUrl}
+              onUrlChange={setInspectorUrl}
+              onLoad={handleLoadInspector}
+              isLoading={isLoading}
+              isInspectorActive={false} // Placeholder
+              onToggleInspector={() => {}} // Placeholder
+            />
             <div className="flex-1 border rounded-lg bg-card overflow-hidden">
                 {isLoading ? (
                      <div className="flex items-center justify-center h-full">
