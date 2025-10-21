@@ -7,7 +7,8 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Globe, Play, RefreshCw } from "lucide-react";
+import { Globe, Play, RefreshCw, Loader2 } from "lucide-react";
+import { fetchUrlContent } from "@/app/actions";
 
 export type Step = {
   id: number;
@@ -57,8 +58,9 @@ const initialSteps: Step[] = [
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>(initialSteps);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
-  const [inspectorUrl, setInspectorUrl] = useState("https://example.com");
-  const [loadedUrl, setLoadedUrl] = useState("");
+  const [inspectorUrl, setInspectorUrl] = useState("https://www.google.com");
+  const [iframeContent, setIframeContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAddStep = (type: string) => {
     const newStep: Step = {
@@ -74,7 +76,9 @@ export default function MainDashboard() {
 
   const handleUpdateStep = (updatedStep: Step) => {
     setSteps(steps.map(step => step.id === updatedStep.id ? updatedStep : step));
-    setSelectedStep(updatedStep);
+    if (selectedStep?.id === updatedStep.id) {
+      setSelectedStep(updatedStep);
+    }
   };
 
   const handleRunTest = () => {
@@ -117,16 +121,23 @@ export default function MainDashboard() {
     setTimeout(runNextStep, 500);
   }
   
-  const handleLoadInspector = () => {
-    // A simple trick to force iframe reload even if the URL is the same
-    setLoadedUrl(""); 
-    setTimeout(() => {
+  const handleLoadInspector = async () => {
+    if (!inspectorUrl) return;
+    setIsLoading(true);
+    setIframeContent(null);
+    try {
         let urlToLoad = inspectorUrl;
         if (!urlToLoad.startsWith('http')) {
             urlToLoad = 'https://' + urlToLoad;
         }
-        setLoadedUrl(urlToLoad);
-    }, 100);
+        const content = await fetchUrlContent(urlToLoad);
+        setIframeContent(content);
+    } catch (error) {
+        console.error("Failed to fetch content:", error);
+        setIframeContent("<p>Failed to load page. Please check the URL and try again.</p>");
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -163,18 +174,27 @@ export default function MainDashboard() {
                     value={inspectorUrl}
                     onChange={(e) => setInspectorUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleLoadInspector()}
+                    disabled={isLoading}
                 />
-                <Button onClick={handleLoadInspector}>
-                    <Globe className="mr-2 h-4 w-4" />
+                <Button onClick={handleLoadInspector} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
                     Load Page
                 </Button>
-                <Button variant="outline" size="icon" onClick={handleLoadInspector} disabled={!loadedUrl}>
+                <Button variant="outline" size="icon" onClick={handleLoadInspector} disabled={!iframeContent || isLoading}>
                     <RefreshCw className="h-4 w-4" />
                 </Button>
             </div>
-            <div className="flex-1 border rounded-lg bg-muted/20 overflow-hidden">
-                {loadedUrl ? (
-                    <iframe src={loadedUrl} className="w-full h-full" title="Web Inspector" />
+            <div className="flex-1 border rounded-lg bg-card overflow-hidden">
+                {isLoading ? (
+                     <div className="flex items-center justify-center h-full">
+                        <div className="text-center text-muted-foreground">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                            <p className="font-medium">Loading Page...</p>
+                            <p className="text-sm">Please wait while we fetch the content.</p>
+                        </div>
+                    </div>
+                ) : iframeContent ? (
+                    <iframe srcDoc={iframeContent} className="w-full h-full" title="Web Inspector" sandbox="allow-scripts allow-same-origin" />
                 ) : (
                     <div className="flex items-center justify-center h-full">
                         <div className="text-center text-muted-foreground">
