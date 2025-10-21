@@ -1,3 +1,4 @@
+
 "use client";
 
 import Header from "@/components/layout/header";
@@ -8,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
 import { Loader2 } from "lucide-react";
 import { fetchUrlContent } from "@/app/actions";
+import { generateTest } from "@/ai/flows/generate-test-flow";
+import type { GenerateTestInput } from "@/ai/flows/schemas";
+import CodeDialog from "./code-dialog";
 
 export type Step = {
   id: number;
@@ -63,7 +67,9 @@ export default function MainDashboard() {
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [selectedElementSelector, setSelectedElementSelector] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
+  const [isExporting, setIsExporting] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState("");
+  const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
 
   const handleAddStep = (type: string) => {
     const newStep: Step = {
@@ -98,17 +104,21 @@ export default function MainDashboard() {
 
         const remainingSteps = prevSteps.filter(step => step.id !== draggedId);
         const targetIndex = remainingSteps.findIndex(step => step.id === targetId);
+        
+        // If dropping at the beginning
+        if (targetId === 0) {
+            return [draggedStep, ...remainingSteps];
+        }
 
-        // If dropping on a step, insert after it.
-        // If dropping on the start card, insert at the beginning.
-        const newIndex = targetId === 0 ? 0 : targetIndex + 1;
+        const newIndex = targetIndex + 1;
 
         if (newIndex >= 0 && newIndex <= remainingSteps.length) {
-            remainingSteps.splice(newIndex, 0, draggedStep);
-            return remainingSteps;
+            const newSteps = [...remainingSteps];
+            newSteps.splice(newIndex, 0, draggedStep);
+            return newSteps;
         }
         
-        return prevSteps; // Should not happen
+        return prevSteps;
     });
   };
 
@@ -269,9 +279,33 @@ export default function MainDashboard() {
   }, [isInspectorActive, iframeContent]);
 
 
+  const handleExport = async (target: GenerateTestInput['target']) => {
+    setIsExporting(true);
+    setGeneratedCode("");
+    setIsCodeDialogOpen(true);
+
+    try {
+      const result = await generateTest({
+        steps: steps.map(s => ({
+          title: s.title,
+          actions: s.actions.map(a => ({ type: a.type, detail: a.detail }))
+        })),
+        target,
+        url: inspectorUrl,
+      });
+      setGeneratedCode(result.code);
+    } catch (error) {
+      console.error("Failed to generate test:", error);
+      setGeneratedCode(`// An error occurred while generating the test script for ${target}.\n// Please check the console for more details.`);
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+
   return (
     <div className="flex flex-col h-screen bg-background">
-      <Header onRun={handleRunTest} />
+      <Header onRun={handleRunTest} onExport={handleExport} isExporting={isExporting} />
       <main className="flex-1 overflow-hidden">
         <Tabs defaultValue="flow-builder" className="h-full flex flex-col">
           <div className="p-4 md:px-8 md:pt-8 md:pb-0">
@@ -331,6 +365,14 @@ export default function MainDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+      <CodeDialog 
+        isOpen={isCodeDialogOpen}
+        onOpenChange={setIsCodeDialogOpen}
+        code={generatedCode}
+        isLoading={isExporting}
+      />
     </div>
   );
 }
+
+    
