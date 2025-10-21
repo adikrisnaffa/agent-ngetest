@@ -1,10 +1,12 @@
+
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Workflow } from "lucide-react";
-import type { Step } from "./main-dashboard";
+import type { Step, Action } from "./main-dashboard";
 import { useState, useEffect } from "react";
+import { Separator } from "../ui/separator";
 
 interface PropertiesPanelProps {
   selectedStep: Step | null;
@@ -12,46 +14,40 @@ interface PropertiesPanelProps {
   onSave: (step: Step) => void;
 }
 
-function ConfigForm({ step, onFieldChange }: { step: Step, onFieldChange: (field: string, value: string) => void }) {
-    if (step.type.toLowerCase() === 'group') {
-        return (
-            <div className="space-y-4">
-                <div>
-                    <Label htmlFor="step-name">Step Name</Label>
+const getActionLabel = (type: string) => {
+    switch (type.toLowerCase()) {
+        case "navigate": return { target: "Path (e.g. /login)", value: "N/A (Not Used)" };
+        case "type": return { target: "Selector", value: "Text to Type" };
+        case "click": return { target: "Selector", value: "N/A (Not Used)" };
+        case "assert": return { target: "Selector or 'URL'", value: "Condition (e.g. 'is visible')" };
+        default: return { target: "Target", value: "Value" };
+    }
+}
+
+function ActionForm({ action, onActionChange }: { action: Action, onActionChange: (id: number, field: 'target' | 'value', value: string) => void }) {
+    const labels = getActionLabel(action.type);
+
+    return (
+        <div className="space-y-3 p-3 border rounded-md bg-muted/20">
+            <h4 className="font-semibold text-sm text-foreground">{action.type} Action</h4>
+            <div className="space-y-2">
+                <Label htmlFor={`action-target-${action.id}`}>{labels.target}</Label>
+                <Input 
+                    id={`action-target-${action.id}`} 
+                    value={action.target} 
+                    onChange={(e) => onActionChange(action.id, 'target', e.target.value)}
+                />
+            </div>
+            {action.type !== 'Click' && action.type !== 'Navigate' && (
+                <div className="space-y-2">
+                    <Label htmlFor={`action-value-${action.id}`}>{labels.value}</Label>
                     <Input 
-                      id="step-name" 
-                      value={step.title}
-                      onChange={(e) => onFieldChange('title', e.target.value)}
+                        id={`action-value-${action.id}`} 
+                        value={action.value}
+                        onChange={(e) => onActionChange(action.id, 'value', e.target.value)}
                     />
                 </div>
-                <p className="text-sm text-muted-foreground">This is a group of actions. Configuration for individual actions will be available soon.</p>
-            </div>
-        )
-    }
-
-    // Example for a single action node
-    return (
-        <div className="space-y-4">
-             <div>
-                <Label htmlFor="node-type">Node Type</Label>
-                <Input id="node-type" value={step.type} disabled />
-            </div>
-            <div>
-                <Label htmlFor="node-title">Node Title</Label>
-                <Input 
-                  id="node-title" 
-                  value={step.title} 
-                  onChange={(e) => onFieldChange('title', e.target.value)}
-                />
-            </div>
-            <div>
-                <Label htmlFor="node-details">Details</Label>
-                <Input 
-                  id="node-details" 
-                  value={step.actions[0]?.detail || ''} 
-                  onChange={(e) => onFieldChange('detail', e.target.value)}
-                />
-            </div>
+            )}
         </div>
     )
 }
@@ -63,15 +59,21 @@ export default function PropertiesPanel({ selectedStep, onClose, onSave }: Prope
     setCurrentStep(selectedStep);
   }, [selectedStep]);
 
-  const handleFieldChange = (field: string, value: string) => {
+  const handleTitleChange = (value: string) => {
+    if(currentStep) {
+        setCurrentStep({ ...currentStep, title: value });
+    }
+  }
+
+  const handleActionChange = (actionId: number, field: 'target' | 'value', value: string) => {
     if (currentStep) {
-        if (field === 'title') {
-            setCurrentStep({ ...currentStep, title: value });
-        } else if (field === 'detail') {
-            const newActions = [...currentStep.actions];
-            newActions[0] = { ...newActions[0], detail: value };
-            setCurrentStep({ ...currentStep, actions: newActions });
+      const newActions = currentStep.actions.map(action => {
+        if (action.id === actionId) {
+          return { ...action, [field]: value };
         }
+        return action;
+      });
+      setCurrentStep({ ...currentStep, actions: newActions });
     }
   };
 
@@ -97,7 +99,24 @@ export default function PropertiesPanel({ selectedStep, onClose, onSave }: Prope
                         </Button>
                     </header>
                     <div className="flex-1 p-6 space-y-6 overflow-auto">
-                        <ConfigForm step={currentStep} onFieldChange={handleFieldChange} />
+                        <div className="space-y-2">
+                            <Label htmlFor="step-name">Step Name</Label>
+                            <Input 
+                              id="step-name" 
+                              value={currentStep.title}
+                              onChange={(e) => handleTitleChange(e.target.value)}
+                            />
+                        </div>
+                        
+                        <Separator />
+                        
+                        <div className="space-y-4">
+                            <Label>Actions</Label>
+                            {currentStep.actions.map(action => (
+                                <ActionForm key={action.id} action={action} onActionChange={handleActionChange} />
+                            ))}
+                        </div>
+
                     </div>
                      <footer className="p-4 border-t mt-auto">
                         <Button className="w-full" onClick={handleSaveChanges}>Save Changes</Button>

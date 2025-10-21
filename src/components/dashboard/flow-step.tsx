@@ -82,7 +82,7 @@ export default function FlowStep({ title, actions, isSelected, status = 'idle', 
           {actions.map((action, index) => (
             <div key={index} className="flex items-start gap-3 text-sm">
               <span className={`font-mono text-xs w-20 flex-shrink-0 ${getActionClasses(action.type)}`}>{action.type}</span>
-              <span className="text-muted-foreground leading-tight">{action.detail}</span>
+              <span className="text-muted-foreground leading-tight truncate">{action.value ? `'${action.value}' in ` : ''}{action.target}</span>
             </div>
           ))}
         </div>

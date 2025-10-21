@@ -13,11 +13,18 @@ import { generateTest } from "@/ai/flows/generate-test-flow";
 import type { GenerateTestInput } from "@/ai/flows/schemas";
 import CodeDialog from "./code-dialog";
 
+export type Action = {
+  id: number;
+  type: string; // e.g., Navigate, Type, Click, Assert
+  target: string; // CSS selector or URL
+  value: string; // Text to type or value to assert
+};
+
 export type Step = {
   id: number;
   title: string;
   type: string;
-  actions: { type: string; detail: string }[];
+  actions: Action[];
   status: 'idle' | 'running' | 'success' | 'error';
 }
 
@@ -27,10 +34,10 @@ const initialSteps: Step[] = [
       title: "User Login",
       type: "Group",
       actions: [
-        { type: "Navigate", detail: "to /login" },
-        { type: "Type", detail: "'testuser' in Username" },
-        { type: "Type", detail: "'password' in Password" },
-        { type: "Click", detail: "Login Button" },
+        { id: 1, type: "Navigate", target: "/login", value: "" },
+        { id: 2, type: "Type", target: "input[name='username']", value: "testuser" },
+        { id:3, type: "Type", target: "input[name='password']", value: "password" },
+        { id: 4, type: "Click", target: "button[type='submit']", value: "" },
       ],
       status: 'idle',
     },
@@ -39,8 +46,8 @@ const initialSteps: Step[] = [
       title: "Assert Login",
       type: "Group",
       actions: [
-        { type: "Assert", detail: "URL is /dashboard" },
-        { type: "Assert", detail: "Welcome message is visible"},
+        { id: 1, type: "Assert", target: "URL", value: "/dashboard" },
+        { id: 2, type: "Assert", target: ".welcome-message", value: "is visible"},
       ],
       status: 'idle',
     },
@@ -49,9 +56,9 @@ const initialSteps: Step[] = [
       title: "Add Product",
       type: "Group",
       actions: [
-        { type: "Click", detail: "Product 'Automation'" },
-        { type: "Click", detail: "Add to Cart Button" },
-        { type: "Assert", detail: "Cart count is 1" },
+        { id: 1, type: "Click", target: "#product-automation", value: "" },
+        { id: 2, type: "Click", target: ".add-to-cart-btn", value: "" },
+        { id: 3, type: "Assert", target: ".cart-count", value: "is 1" },
       ],
       status: 'idle',
     },
@@ -76,7 +83,7 @@ export default function MainDashboard() {
         id: Date.now(), // Use a more unique ID
         title: `${type} Step`,
         type: type,
-        actions: [{ type: type, detail: `Configure this ${type} action` }],
+        actions: [{ id: Date.now(), type: type, target: "your-selector", value: `your-value` }],
         status: 'idle'
     };
     setSteps([...steps, newStep]);
@@ -288,7 +295,11 @@ export default function MainDashboard() {
       const result = await generateTest({
         steps: steps.map(s => ({
           title: s.title,
-          actions: s.actions.map(a => ({ type: a.type, detail: a.detail }))
+          actions: s.actions.map(a => ({ 
+            type: a.type, 
+            // construct the detail string from structured data
+            detail: `${a.value ? `'${a.value}' in ` : ''}${a.target}`
+          }))
         })),
         target,
         url: inspectorUrl,
@@ -374,5 +385,3 @@ export default function MainDashboard() {
     </div>
   );
 }
-
-    
