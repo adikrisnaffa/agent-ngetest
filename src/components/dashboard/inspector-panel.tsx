@@ -13,6 +13,7 @@ interface InspectorPanelProps {
     isLoading: boolean;
     isInspectorActive: boolean;
     onToggleInspector: () => void;
+    selector: string;
 }
 
 export default function InspectorPanel({
@@ -21,7 +22,8 @@ export default function InspectorPanel({
     onLoad,
     isLoading,
     isInspectorActive,
-    onToggleInspector
+    onToggleInspector,
+    selector
 }: InspectorPanelProps) {
     return (
         <div className="flex-shrink-0 space-y-4">
@@ -50,7 +52,7 @@ export default function InspectorPanel({
                     </Label>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Input readOnly placeholder="Click an element to get its selector" className="w-80 bg-background" />
+                    <Input readOnly placeholder="Click an element to get its selector" value={selector} className="w-80 bg-background" />
                     <Button variant="secondary">
                         <Zap className="mr-2"/>
                         Create Step

@@ -3,7 +3,7 @@
 import Header from "@/components/layout/header";
 import FlowCanvas from "@/components/dashboard/flow-canvas";
 import PropertiesPanel from "./properties-panel";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
 import { Loader2 } from "lucide-react";
@@ -60,6 +60,10 @@ export default function MainDashboard() {
   const [inspectorUrl, setInspectorUrl] = useState("https://www.google.com");
   const [iframeContent, setIframeContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInspectorActive, setIsInspectorActive] = useState(false);
+  const [selectedElementSelector, setSelectedElementSelector] = useState('');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
 
   const handleAddStep = (type: string) => {
     const newStep: Step = {
@@ -142,6 +146,101 @@ export default function MainDashboard() {
     }
   }
 
+  // Handle messaging from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'element-selected') {
+        setSelectedElementSelector(event.data.selector);
+        setIsInspectorActive(false); // Turn off inspector mode after selection
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  // Inject script into iframe when inspector mode is toggled
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe && iframe.contentWindow) {
+      const doc = iframe.contentWindow.document;
+      const scriptId = 'inspector-script';
+      let script = doc.getElementById(scriptId) as HTMLScriptElement | null;
+
+      if (isInspectorActive) {
+        if (!script) {
+          script = doc.createElement('script');
+          script.id = scriptId;
+          script.innerHTML = `
+            let highlightedElement = null;
+            const highlightStyle = 'outline: 2px solid #6366f1; background-color: rgba(99, 102, 241, 0.2);';
+
+            function getCssSelector(el) {
+              if (!(el instanceof Element)) return;
+              const path = [];
+              while (el.nodeType === Node.ELEMENT_NODE) {
+                let selector = el.nodeName.toLowerCase();
+                if (el.id) {
+                  selector += '#' + el.id;
+                  path.unshift(selector);
+                  break;
+                } else {
+                  let sib = el, nth = 1;
+                  while (sib = sib.previousElementSibling) {
+                    if (sib.nodeName.toLowerCase() == selector) nth++;
+                  }
+                  if (nth != 1) selector += ":nth-of-type("+nth+")";
+                }
+                path.unshift(selector);
+                el = el.parentNode;
+              }
+              return path.join(" > ");
+            }
+
+            function handleMouseOver(e) {
+              highlightedElement?.style.removeProperty('outline');
+              highlightedElement?.style.removeProperty('background-color');
+              highlightedElement = e.target;
+              highlightedElement.style.cssText += highlightStyle;
+            }
+
+            function handleMouseOut(e) {
+              e.target.style.removeProperty('outline');
+              e.target.style.removeProperty('background-color');
+            }
+            
+            function handleClick(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const selector = getCssSelector(e.target);
+                window.parent.postMessage({ type: 'element-selected', selector: selector }, '*');
+                
+                // Cleanup
+                document.removeEventListener('mouseover', handleMouseOver);
+                document.removeEventListener('mouseout', handleMouseOut);
+                document.removeEventListener('click', handleClick, true);
+                highlightedElement?.style.removeProperty('outline');
+                highlightedElement?.style.removeProperty('background-color');
+            }
+
+            document.addEventListener('mouseover', handleMouseOver);
+            document.addEventListener('mouseout', handleMouseOut);
+            document.addEventListener('click', handleClick, true);
+          `;
+          doc.body.appendChild(script);
+        }
+      } else {
+        if (script) {
+          script.remove();
+          // We might need to send a message to the script to remove its own listeners
+        }
+      }
+    }
+  }, [isInspectorActive, iframeContent]);
+
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <Header onRun={handleRunTest} />
@@ -175,8 +274,9 @@ export default function MainDashboard() {
               onUrlChange={setInspectorUrl}
               onLoad={handleLoadInspector}
               isLoading={isLoading}
-              isInspectorActive={false} // Placeholder
-              onToggleInspector={() => {}} // Placeholder
+              isInspectorActive={isInspectorActive}
+              onToggleInspector={() => setIsInspectorActive(!isInspectorActive)}
+              selector={selectedElementSelector}
             />
             <div className="flex-1 border rounded-lg bg-card overflow-hidden">
                 {isLoading ? (
@@ -188,7 +288,7 @@ export default function MainDashboard() {
                         </div>
                     </div>
                 ) : iframeContent ? (
-                    <iframe srcDoc={iframeContent} className="w-full h-full" title="Web Inspector" sandbox="allow-scripts allow-same-origin" />
+                    <iframe ref={iframeRef} srcDoc={iframeContent} className="w-full h-full" title="Web Inspector" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
                 ) : (
                     <div className="flex items-center justify-center h-full">
                         <div className="text-center text-muted-foreground">
