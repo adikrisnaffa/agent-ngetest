@@ -1,6 +1,7 @@
 import ActionCard from "./action-card";
-import { MousePointerClick, Type, Search, Forward } from "lucide-react";
+import { MousePointerClick, Type, Search, Forward, Plus, FilePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "../ui/button";
 
 export default function NodePalette() {
   const actions = [
@@ -16,6 +17,16 @@ export default function NodePalette() {
         <header className="p-4 border-b">
           <h2 className="text-lg font-semibold">Node Palette</h2>
         </header>
+        <div className="p-4 space-y-4">
+            <Button className="w-full">
+                <FilePlus className="mr-2 h-4 w-4" />
+                Create Flow
+            </Button>
+            <Button variant="secondary" className="w-full">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Node
+            </Button>
+        </div>
         <ScrollArea className="flex-1">
           <div className="p-4">
             <div className="grid grid-cols-2 gap-3">
