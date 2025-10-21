@@ -11,9 +11,10 @@ interface FlowCanvasProps {
     onStepSelect: (step: Step) => void;
     selectedStepId: number | null;
     onAddStep: (type: string) => void;
+    onDeleteStep: (id: number) => void;
 }
 
-export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddStep }: FlowCanvasProps) {
+export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddStep, onDeleteStep }: FlowCanvasProps) {
   
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -61,7 +62,7 @@ export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddS
                     <div className="flex items-center gap-8">
                         <div className="w-16 h-1 bg-border rounded-full" />
                         <div onClick={() => onStepSelect(step)}>
-                            <FlowStep {...step} isSelected={selectedStepId === step.id} />
+                            <FlowStep {...step} isSelected={selectedStepId === step.id} onDelete={onDeleteStep} />
                         </div>
                     </div>
                 </React.Fragment>

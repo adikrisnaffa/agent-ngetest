@@ -84,6 +84,13 @@ export default function MainDashboard() {
     }
   };
 
+  const handleDeleteStep = (id: number) => {
+    setSteps(steps.filter(step => step.id !== id));
+    if (selectedStep?.id === id) {
+      setSelectedStep(null);
+    }
+  };
+
   const handleRunTest = () => {
     // Simulate test run
     let currentStepIndex = 0;
@@ -259,6 +266,7 @@ export default function MainDashboard() {
                     onStepSelect={setSelectedStep} 
                     selectedStepId={selectedStep?.id ?? null}
                     onAddStep={handleAddStep}
+                    onDeleteStep={handleDeleteStep}
                 />
             </div>
             <PropertiesPanel 

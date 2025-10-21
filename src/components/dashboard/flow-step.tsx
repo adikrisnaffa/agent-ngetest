@@ -35,7 +35,19 @@ const getStatusClasses = (status: Step['status'], isSelected: boolean | undefine
     }
 }
 
-export default function FlowStep({ title, actions, isSelected, status = 'idle' }: Step & { isSelected?: boolean }) {
+interface FlowStepProps extends Step {
+  isSelected?: boolean;
+  onDelete: (id: number) => void;
+}
+
+
+export default function FlowStep({ title, actions, isSelected, status = 'idle', id, onDelete }: FlowStepProps) {
+  
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the step from being selected when deleting
+    onDelete(id);
+  }
+  
   return (
     <Card className={cn(
         "w-80 shadow-lg bg-card/80 backdrop-blur-sm transition-all duration-300 group cursor-pointer",
@@ -52,12 +64,12 @@ export default function FlowStep({ title, actions, isSelected, status = 'idle' }
             </Button>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60 group-hover:opacity-100">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
                         <MoreVertical className="h-5 w-5" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem className="text-destructive" onClick={handleDelete}>
                         <Trash2 className="mr-2 h-4 w-4"/>
                         Delete
                     </DropdownMenuItem>
