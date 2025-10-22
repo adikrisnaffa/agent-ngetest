@@ -7,6 +7,7 @@ import NodePalette from "@/components/dashboard/node-palette";
 import AuthenticationView from "@/components/dashboard/authentication-view";
 import ScanConfigView from "@/components/dashboard/scan-config-view";
 import TestSettingsView from "@/components/dashboard/test-settings-view";
+import RepositoryView from "@/components/dashboard/repository-view";
 
 // Placeholder component for other views
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -32,8 +33,9 @@ export default function Home() {
         return <ScanConfigView />;
       case "Test Settings":
         return <TestSettingsView />;
-      case "Configuration":
       case "Repository":
+        return <RepositoryView />;
+      case "Configuration":
         return <PlaceholderView title={activeView} />;
       default:
         return <MainDashboard />;
