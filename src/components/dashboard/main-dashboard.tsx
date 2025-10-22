@@ -295,11 +295,23 @@ export default function MainDashboard() {
       const result = await generateTest({
         steps: steps.map(s => ({
           title: s.title,
-          actions: s.actions.map(a => ({ 
-            type: a.type, 
-            // construct the detail string from structured data
-            detail: `${a.value ? `'${a.value}' in ` : ''}${a.target}`
-          }))
+          actions: s.actions.map(a => {
+            // Reconstruct the 'detail' string for the AI prompt
+            let detail = '';
+            if (a.type === 'Navigate') {
+              detail = a.target;
+            } else if (a.type === 'Type') {
+              detail = `'${a.value}' in ${a.target}`;
+            } else if (a.type === 'Assert') {
+              detail = `${a.target} ${a.value}`;
+            } else { // Click
+              detail = a.target;
+            }
+            return {
+              type: a.type,
+              detail: detail
+            }
+          })
         })),
         target,
         url: inspectorUrl,
