@@ -362,69 +362,71 @@ export default function MainDashboard() {
   return (
     <div className="flex flex-col h-screen bg-background">
       <Header onRun={handleRunTest} onStop={handleStopTest} isRunning={isRunning} onExport={handleExport} isExporting={isExporting} />
-      <NodePalette onAddNode={handleAddStep} onCreateFlow={handleCreateNewFlow} />
-      <main className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="p-4 md:px-8 md:pt-8 md:pb-0">
-            <TabsList>
-              <TabsTrigger value="flow-builder">Flow Builder</TabsTrigger>
-              <TabsTrigger value="inspector">Inspector</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="flow-builder" className="flex-1 overflow-hidden p-4 md:p-8 pt-4">
-            <div className="flex-1 overflow-hidden h-full relative">
-                <FlowCanvas 
-                    steps={steps} 
-                    onStepSelect={setSelectedStep} 
-                    selectedStepId={selectedStep?.id ?? null}
-                    onAddStep={handleAddStep}
-                    onDeleteStep={handleDeleteStep}
-                    onMoveStep={handleMoveStep}
-                    flowTitle={flowTitle}
-                    onTitleChange={handleTitleChange}
-                />
-                 <PropertiesPanel 
-                    key={selectedStep?.id}
-                    selectedStep={selectedStep} 
-                    onClose={() => setSelectedStep(null)}
-                    onSave={handleUpdateStep}
-                />
+      <div className="flex flex-1 overflow-hidden">
+        <NodePalette onAddNode={handleAddStep} onCreateFlow={handleCreateNewFlow} />
+        <main className="flex-1 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <div className="p-4 md:px-8 md:pt-8 md:pb-0">
+              <TabsList>
+                <TabsTrigger value="flow-builder">Flow Builder</TabsTrigger>
+                <TabsTrigger value="inspector">Inspector</TabsTrigger>
+              </TabsList>
             </div>
-          </TabsContent>
-          <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
-            <InspectorPanel 
-              url={inspectorUrl}
-              onUrlChange={setInspectorUrl}
-              onLoad={handleLoadInspector}
-              isLoading={isLoading}
-              isInspectorActive={isInspectorActive}
-              onToggleInspector={() => setIsInspectorActive(!isInspectorActive)}
-              selector={selectedElementSelector}
-              onCreateStep={handleCreateStepFromInspector}
-            />
-            <div className="flex-1 border rounded-lg bg-card overflow-hidden">
-                {isLoading ? (
-                     <div className="flex items-center justify-center h-full">
-                        <div className="text-center text-muted-foreground">
-                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                            <p className="font-medium">Loading Page...</p>
-                            <p className="text-sm">Please wait while we fetch the content.</p>
-                        </div>
-                    </div>
-                ) : iframeContent ? (
-                    <iframe ref={iframeRef} srcDoc={iframeContent} className="w-full h-full" title="Web Inspector" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
-                ) : (
-                    <div className="flex items-center justify-center h-full">
-                        <div className="text-center text-muted-foreground">
-                            <p className="font-medium">Web Inspector</p>
-                            <p className="text-sm">Enter a URL and click "Load Page" to begin inspecting elements.</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+            <TabsContent value="flow-builder" className="flex-1 overflow-hidden p-4 md:p-8 pt-4">
+              <div className="flex-1 overflow-hidden h-full relative">
+                  <FlowCanvas 
+                      steps={steps} 
+                      onStepSelect={setSelectedStep} 
+                      selectedStepId={selectedStep?.id ?? null}
+                      onAddStep={handleAddStep}
+                      onDeleteStep={handleDeleteStep}
+                      onMoveStep={handleMoveStep}
+                      flowTitle={flowTitle}
+                      onTitleChange={handleTitleChange}
+                  />
+                  <PropertiesPanel 
+                      key={selectedStep?.id}
+                      selectedStep={selectedStep} 
+                      onClose={() => setSelectedStep(null)}
+                      onSave={handleUpdateStep}
+                  />
+              </div>
+            </TabsContent>
+            <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
+              <InspectorPanel 
+                url={inspectorUrl}
+                onUrlChange={setInspectorUrl}
+                onLoad={handleLoadInspector}
+                isLoading={isLoading}
+                isInspectorActive={isInspectorActive}
+                onToggleInspector={() => setIsInspectorActive(!isInspectorActive)}
+                selector={selectedElementSelector}
+                onCreateStep={handleCreateStepFromInspector}
+              />
+              <div className="flex-1 border rounded-lg bg-card overflow-hidden">
+                  {isLoading ? (
+                      <div className="flex items-center justify-center h-full">
+                          <div className="text-center text-muted-foreground">
+                              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                              <p className="font-medium">Loading Page...</p>
+                              <p className="text-sm">Please wait while we fetch the content.</p>
+                          </div>
+                      </div>
+                  ) : iframeContent ? (
+                      <iframe ref={iframeRef} srcDoc={iframeContent} className="w-full h-full" title="Web Inspector" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
+                  ) : (
+                      <div className="flex items-center justify-center h-full">
+                          <div className="text-center text-muted-foreground">
+                              <p className="font-medium">Web Inspector</p>
+                              <p className="text-sm">Enter a URL and click "Load Page" to begin inspecting elements.</p>
+                          </div>
+                      </div>
+                  )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
       <CodeDialog 
         isOpen={isCodeDialogOpen}
         onOpenChange={setIsCodeDialogOpen}
