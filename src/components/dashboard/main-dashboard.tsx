@@ -28,41 +28,7 @@ export type Step = {
   status: 'idle' | 'running' | 'success' | 'error';
 }
 
-const initialSteps: Step[] = [
-    {
-      id: 1,
-      title: "User Login",
-      type: "Group",
-      actions: [
-        { id: 1, type: "Navigate", target: "/login", value: "" },
-        { id: 2, type: "Type", target: "input[name='username']", value: "testuser" },
-        { id:3, type: "Type", target: "input[name='password']", value: "password" },
-        { id: 4, type: "Click", target: "button[type='submit']", value: "" },
-      ],
-      status: 'idle',
-    },
-    {
-      id: 2,
-      title: "Assert Login",
-      type: "Group",
-      actions: [
-        { id: 1, type: "Assert", target: "URL", value: "/dashboard" },
-        { id: 2, type: "Assert", target: ".welcome-message", value: "is visible"},
-      ],
-      status: 'idle',
-    },
-    {
-      id: 3,
-      title: "Add Product",
-      type: "Group",
-      actions: [
-        { id: 1, type: "Click", target: "#product-automation", value: "" },
-        { id: 2, type: "Click", target: ".add-to-cart-btn", value: "" },
-        { id: 3, type: "Assert", target: ".cart-count", value: "is 1" },
-      ],
-      status: 'idle',
-    },
-];
+const initialSteps: Step[] = [];
 
 
 export default function MainDashboard() {
@@ -432,5 +398,3 @@ export default function MainDashboard() {
     </div>
   );
 }
-
-    
