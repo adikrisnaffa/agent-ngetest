@@ -10,10 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import placeholderImages from "@/lib/placeholder-images.json";
 import type { GenerateTestInput } from "@/ai/flows/schemas";
-
-const userAvatar = placeholderImages.placeholderImages.find(p => p.id === 'user-avatar');
 
 interface HeaderProps {
     onRun: () => void;
@@ -58,7 +55,6 @@ export default function Header({ onRun, onStop, isRunning, onExport, isExporting
         </DropdownMenu>
 
         <Avatar className="h-9 w-9">
-          {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" data-ai-hint={userAvatar.imageHint} />}
           <AvatarFallback>
             <User className="h-5 w-5" />
           </AvatarFallback>
