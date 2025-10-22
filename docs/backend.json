@@ -1,0 +1,333 @@
+{
+  "entities": {
+    "ObjectRepository": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ObjectRepository",
+      "type": "object",
+      "description": "Represents a repository of UI elements and their properties for automated testing.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Object Repository."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the object repository."
+        },
+        "elements": {
+          "type": "array",
+          "description": "A list of UI elements within the repository.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string",
+          "description": "A meaningful description for the object repository."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "elements"
+      ]
+    },
+    "UIElement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UIElement",
+      "type": "object",
+      "description": "Represents a single UI element within an object repository.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UI Element."
+        },
+        "repositoryId": {
+          "type": "string",
+          "description": "Reference to ObjectRepository. (Relationship: ObjectRepository 1:N UIElement)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the UI element."
+        },
+        "locator": {
+          "type": "string",
+          "description": "Locator strategy and value (e.g., xpath, CSS selector)."
+        },
+        "elementType": {
+          "type": "string",
+          "description": "Type of the UI element (e.g., button, text field, link)."
+        },
+        "attributes": {
+          "type": "string",
+          "description": "Attributes for the UI element."
+        }
+      },
+      "required": [
+        "id",
+        "repositoryId",
+        "name",
+        "locator"
+      ]
+    },
+    "EndToEndFlow": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EndToEndFlow",
+      "type": "object",
+      "description": "Represents an end-to-end flow defined by a sequence of actions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the End-to-End Flow."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the flow."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the flow."
+        },
+        "steps": {
+          "type": "array",
+          "description": "An ordered list of actions that constitute the flow. References Action Entity",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "steps"
+      ]
+    },
+    "Action": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Action",
+      "type": "object",
+      "description": "Represents a single action within an end-to-end flow.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Action."
+        },
+        "flowId": {
+          "type": "string",
+          "description": "Reference to EndToEndFlow. (Relationship: EndToEndFlow 1:N Action)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of action (e.g., click, type, navigate)."
+        },
+        "targetElementId": {
+          "type": "string",
+          "description": "Reference to UIElement if the action targets a specific UI element. Nullable"
+        },
+        "parameters": {
+          "type": "string",
+          "description": "Parameters for the action (e.g., text to type, URL to navigate to)."
+        }
+      },
+      "required": [
+        "id",
+        "flowId",
+        "type"
+      ]
+    },
+    "TestCase": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TestCase",
+      "type": "object",
+      "description": "Represents an automatically generated test case.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Test Case."
+        },
+        "flowId": {
+          "type": "string",
+          "description": "Reference to EndToEndFlow. (Relationship: EndToEndFlow 1:N TestCase)"
+        },
+        "framework": {
+          "type": "string",
+          "description": "Target testing framework (e.g., Playwright, Cypress, Selenium)."
+        },
+        "code": {
+          "type": "string",
+          "description": "Generated test case code."
+        }
+      },
+      "required": [
+        "id",
+        "flowId",
+        "framework",
+        "code"
+      ]
+    },
+    "Session": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Session",
+      "type": "object",
+      "description": "Represents a session of the user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Session."
+        },
+        "login": {
+          "type": "string",
+          "description": "The user name of the session."
+        },
+        "logout": {
+          "type": "string",
+          "description": "Timestamp of when the session ended."
+        }
+      },
+      "required": [
+        "id",
+        "login",
+        "logout"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/objectRepositories/{objectRepositoryId}",
+        "definition": {
+          "entityName": "ObjectRepository",
+          "schema": {
+            "$ref": "#/backend/entities/ObjectRepository"
+          },
+          "description": "Stores object repositories owned by a user. Includes denormalized ownership via path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the object repository."
+            },
+            {
+              "name": "objectRepositoryId",
+              "description": "The ID of the object repository."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/objectRepositories/{objectRepositoryId}/uiElements/{uiElementId}",
+        "definition": {
+          "entityName": "UIElement",
+          "schema": {
+            "$ref": "#/backend/entities/UIElement"
+          },
+          "description": "Stores UI elements belonging to an object repository. Includes denormalized ownership via path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the UI Element."
+            },
+            {
+              "name": "objectRepositoryId",
+              "description": "The ID of the parent object repository."
+            },
+            {
+              "name": "uiElementId",
+              "description": "The ID of the UI element."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/endToEndFlows/{endToEndFlowId}",
+        "definition": {
+          "entityName": "EndToEndFlow",
+          "schema": {
+            "$ref": "#/backend/entities/EndToEndFlow"
+          },
+          "description": "Stores end-to-end flows created by users. Includes denormalized ownership via path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who created the flow."
+            },
+            {
+              "name": "endToEndFlowId",
+              "description": "The ID of the end-to-end flow."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/endToEndFlows/{endToEndFlowId}/actions/{actionId}",
+        "definition": {
+          "entityName": "Action",
+          "schema": {
+            "$ref": "#/backend/entities/Action"
+          },
+          "description": "Stores actions within an end-to-end flow. Includes denormalized ownership via path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the action."
+            },
+            {
+              "name": "endToEndFlowId",
+              "description": "The ID of the parent end-to-end flow."
+            },
+            {
+              "name": "actionId",
+              "description": "The ID of the action."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId}",
+        "definition": {
+          "entityName": "TestCase",
+          "schema": {
+            "$ref": "#/backend/entities/TestCase"
+          },
+          "description": "Stores test cases generated for an end-to-end flow. Includes denormalized ownership via path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the test case."
+            },
+            {
+              "name": "endToEndFlowId",
+              "description": "The ID of the parent end-to-end flow."
+            },
+            {
+              "name": "testCaseId",
+              "description": "The ID of the test case."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/sessions/{sessionId}",
+        "definition": {
+          "entityName": "Session",
+          "schema": {
+            "$ref": "#/backend/entities/Session"
+          },
+          "description": "Stores session information for users.",
+          "params": [
+            {
+              "name": "sessionId",
+              "description": "The ID of the session."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the Automation Aent application's core features: Object Repository Builder, End-to-End Flow Builder, and Test Case Auto-Generation. It prioritizes authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` collection, ensuring clear ownership and simplified security rules. Collaborative data, if introduced in the future, would use the Membership Map model within dedicated collections.\n\n**Authorization Independence (Denormalization):**\n*   Object Repositories, UI Elements, End-to-End Flows, Actions and Test Cases are all user-owned. Their paths start with `/users/{userId}` ensuring ownership and eliminating the need for `get()` calls in security rules to verify ownership.\n\n**QAPs (Queries and Permissions):**\n*   **Secure Lists:** The path-based ownership (`/users/{userId}/...`) allows for secure `list` operations.  Rules can easily filter collections based on the `request.auth.uid`.\n*   **Segregation:** Each entity type (ObjectRepository, UIElement, etc.) resides in its own collection under the user's document.  This segregation simplifies rules because each collection has a homogeneous security posture.\n\n**Future Considerations:**\n*   If collaborative features are added (e.g., shared object repositories), a `members` map would be added to the ObjectRepository documents, denormalizing the authorization information for child collections (UIElements)."
+  }
+}
