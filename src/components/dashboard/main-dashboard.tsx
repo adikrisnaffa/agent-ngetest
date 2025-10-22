@@ -86,7 +86,7 @@ export default function MainDashboard() {
   useEffect(() => {
     // Don't save initial default data, only save after user is loaded
     // and there are actual changes.
-    if (!user || isUserLoading) return;
+    if (!user || isUserLoading || !firestore || !auth) return;
     
     const flowDocRef = doc(firestore, `users/${user.uid}/endToEndFlows`, FLOW_ID);
     const dataToSave: FlowDoc = {
@@ -95,9 +95,9 @@ export default function MainDashboard() {
     };
     
     // Use non-blocking write to save data in the background
-    setDocumentNonBlocking(flowDocRef, dataToSave, { merge: true });
+    setDocumentNonBlocking(flowDocRef, auth, dataToSave, { merge: true });
 
-  }, [steps, flowTitle, user, isUserLoading, firestore]);
+  }, [steps, flowTitle, user, isUserLoading, firestore, auth]);
 
 
   const handleAddStep = (type: string, target?: string) => {
@@ -488,5 +488,3 @@ export default function MainDashboard() {
     </div>
   );
 }
-
-    
