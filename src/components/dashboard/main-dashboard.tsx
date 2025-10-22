@@ -12,7 +12,7 @@ import { fetchUrlContent } from "@/app/actions";
 import { generateTest } from "@/ai/flows/generate-test-flow";
 import type { GenerateTestInput } from "@/ai/flows/schemas";
 import CodeDialog from "./code-dialog";
-import { useFirebase } from "@/firebase/provider";
+import { useFirebase, useMemoFirebase } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { doc, getDoc } from "firebase/firestore";
@@ -81,14 +81,18 @@ export default function MainDashboard() {
       });
     }
   }, [user, isUserLoading, auth, firestore]);
+
+  const flowDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, `users/${user.uid}/endToEndFlows`, FLOW_ID);
+  }, [user, firestore]);
   
   // Effect for saving data
   useEffect(() => {
     // Don't save initial default data, only save after user is loaded
     // and there are actual changes.
-    if (!user || isUserLoading || !firestore || !auth) return;
+    if (!flowDocRef || !auth) return;
     
-    const flowDocRef = doc(firestore, `users/${user.uid}/endToEndFlows`, FLOW_ID);
     const dataToSave: FlowDoc = {
       title: flowTitle,
       steps: steps,
@@ -97,7 +101,7 @@ export default function MainDashboard() {
     // Use non-blocking write to save data in the background
     setDocumentNonBlocking(flowDocRef, auth, dataToSave, { merge: true });
 
-  }, [steps, flowTitle, user, isUserLoading, firestore, auth]);
+  }, [steps, flowTitle, flowDocRef, auth]);
 
 
   const handleAddStep = (type: string, target?: string) => {
