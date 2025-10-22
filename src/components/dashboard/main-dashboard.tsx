@@ -1,4 +1,3 @@
-
 "use client";
 
 import Header from "@/components/layout/header";
@@ -12,10 +11,6 @@ import { fetchUrlContent } from "@/app/actions";
 import { generateTest } from "@/ai/flows/generate-test-flow";
 import type { GenerateTestInput } from "@/ai/flows/schemas";
 import CodeDialog from "./code-dialog";
-import { useFirebase, useMemoFirebase } from "@/firebase";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { doc, getDoc } from "firebase/firestore";
 
 export type Action = {
   id: number;
@@ -55,54 +50,6 @@ export default function MainDashboard() {
   const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
   const [activeTab, setActiveTab] = useState("flow-builder");
-
-  const { auth, firestore, user, isUserLoading } = useFirebase();
-  const FLOW_ID = "main_flow"; // We'll use a single flow for now
-
-  // Effect for authentication and data loading
-  useEffect(() => {
-    if (isUserLoading || !auth || !firestore) return;
-
-    if (!user) {
-      initiateAnonymousSignIn(auth);
-    } else {
-      // User is logged in, try to load data
-      const flowDocRef = doc(firestore, `users/${user.uid}/endToEndFlows`, FLOW_ID);
-      getDoc(flowDocRef).then(docSnap => {
-        if (docSnap.exists()) {
-          const data = docSnap.data() as FlowDoc;
-          setFlowTitle(data.title);
-          setSteps(data.steps);
-        } else {
-          // No data, start with an empty flow
-          setFlowTitle("Untitled Flow");
-          setSteps([]);
-        }
-      });
-    }
-  }, [user, isUserLoading, auth, firestore]);
-
-  const flowDocRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, `users/${user.uid}/endToEndFlows`, FLOW_ID);
-  }, [user, firestore]);
-  
-  // Effect for saving data
-  useEffect(() => {
-    // Don't save initial default data, only save after user is loaded
-    // and there are actual changes.
-    if (!flowDocRef || !auth) return;
-    
-    const dataToSave: FlowDoc = {
-      title: flowTitle,
-      steps: steps,
-    };
-    
-    // Use non-blocking write to save data in the background
-    setDocumentNonBlocking(flowDocRef, auth, dataToSave, { merge: true });
-
-  }, [steps, flowTitle, flowDocRef, auth]);
-
 
   const handleAddStep = (type: string, target?: string) => {
     const newStep: Step = {
@@ -404,19 +351,6 @@ export default function MainDashboard() {
   const handleTitleChange = (newTitle: string) => {
     setFlowTitle(newTitle);
   }
-
-  // Show a loading indicator while Firebase is initializing or loading data
-  if (isUserLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Menyiapkan Sesi Anda...</p>
-        </div>
-      </div>
-    );
-  }
-
 
   return (
     <div className="flex flex-col h-screen bg-background">
