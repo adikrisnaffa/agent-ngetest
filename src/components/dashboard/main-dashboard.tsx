@@ -117,9 +117,12 @@ export default function MainDashboard() {
 
     // Simple logic to guess the action type
     let actionType = 'Click';
-    if (selector.includes('input') || selector.includes('textarea')) {
+    const lowerSelector = selector.toLowerCase();
+    const isInput = lowerSelector.includes('input') || lowerSelector.includes('textarea') || lowerSelector.match(/\[contenteditable\s*=\s*['"]?true['"]?\]/);
+
+    if (isInput) {
         actionType = 'Type';
-    } else if (selector.includes('button') || selector.includes('a[href]')) {
+    } else if (lowerSelector.includes('button') || lowerSelector.includes('a[href]')) {
         actionType = 'Click';
     }
 
@@ -287,7 +290,7 @@ export default function MainDashboard() {
           script.id = scriptId;
           script.innerHTML = `
             let highlightedElement = null;
-            const highlightStyle = 'outline: 2px solid #6366f1; background-color: rgba(99, 102, 241, 0.2);';
+            const highlightStyle = 'outline: 2px solid #BE52FF; background-color: rgba(190, 82, 255, 0.2); box-shadow: 0 0 10px rgba(190, 82, 255, 0.5);';
 
             function getCssSelector(el) {
               if (!(el instanceof Element)) return;
@@ -314,6 +317,7 @@ export default function MainDashboard() {
             function handleMouseOver(e) {
               highlightedElement?.style.removeProperty('outline');
               highlightedElement?.style.removeProperty('background-color');
+              highlightedElement?.style.removeProperty('box-shadow');
               highlightedElement = e.target;
               highlightedElement.style.cssText += highlightStyle;
             }
@@ -321,6 +325,7 @@ export default function MainDashboard() {
             function handleMouseOut(e) {
               e.target.style.removeProperty('outline');
               e.target.style.removeProperty('background-color');
+              e.target.style.removeProperty('box-shadow');
             }
             
             function handleClick(e) {
@@ -336,6 +341,7 @@ export default function MainDashboard() {
                 document.removeEventListener('click', handleClick, true);
                 highlightedElement?.style.removeProperty('outline');
                 highlightedElement?.style.removeProperty('background-color');
+                highlightedElement?.style.removeProperty('box-shadow');
             }
 
             document.addEventListener('mouseover', handleMouseOver);
@@ -391,6 +397,10 @@ export default function MainDashboard() {
     }
   }
 
+  const handleTitleChange = (newTitle: string) => {
+    setFlowTitle(newTitle);
+  }
+
   // Show a loading indicator while Firebase is initializing or loading data
   if (isUserLoading) {
     return (
@@ -425,7 +435,7 @@ export default function MainDashboard() {
                     onDeleteStep={handleDeleteStep}
                     onMoveStep={handleMoveStep}
                     flowTitle={flowTitle}
-                    onTitleChange={setFlowTitle}
+                    onTitleChange={handleTitleChange}
                 />
                  <PropertiesPanel 
                     key={selectedStep?.id}
