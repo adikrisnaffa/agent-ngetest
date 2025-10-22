@@ -3,10 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Workflow } from "lucide-react";
+import { X, Workflow, Trash2, Plus, MousePointerClick, Type, Search, Forward } from "lucide-react";
 import type { Step, Action } from "./main-dashboard";
 import { useState, useEffect } from "react";
 import { Separator } from "../ui/separator";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface PropertiesPanelProps {
   selectedStep: Step | null;
@@ -24,11 +26,19 @@ const getActionLabel = (type: string) => {
     }
 }
 
-function ActionForm({ action, onActionChange }: { action: Action, onActionChange: (id: number, field: 'target' | 'value', value: string) => void }) {
+function ActionForm({ 
+  action, 
+  onActionChange, 
+  onActionDelete 
+}: { 
+  action: Action, 
+  onActionChange: (id: number, field: 'target' | 'value', value: string) => void,
+  onActionDelete: (id: number) => void
+}) {
     const labels = getActionLabel(action.type);
 
     return (
-        <div className="space-y-3 p-3 border rounded-md bg-muted/20">
+        <div className="space-y-3 p-3 border rounded-md bg-muted/20 relative group/action">
             <h4 className="font-semibold text-sm text-foreground">{action.type} Action</h4>
             <div className="space-y-2">
                 <Label htmlFor={`action-target-${action.id}`}>{labels.target}</Label>
@@ -48,7 +58,43 @@ function ActionForm({ action, onActionChange }: { action: Action, onActionChange
                     />
                 </div>
             )}
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover/action:opacity-100"
+              onClick={() => onActionDelete(action.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
         </div>
+    )
+}
+
+const AddActionButton = ({ onAddAction }: { onAddAction: (type: string) => void }) => {
+    const actionTypes = [
+        { name: "Click", icon: MousePointerClick },
+        { name: "Type", icon: Type },
+        { name: "Assert", icon: Search },
+        { name: "Navigate", icon: Forward },
+    ];
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Action
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                {actionTypes.map(action => (
+                    <DropdownMenuItem key={action.name} onClick={() => onAddAction(action.name)}>
+                        <action.icon className="mr-2 h-4 w-4" />
+                        <span>{action.name}</span>
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
     )
 }
 
@@ -77,6 +123,25 @@ export default function PropertiesPanel({ selectedStep, onClose, onSave }: Prope
     }
   };
 
+  const handleAddAction = (type: string) => {
+    if (currentStep) {
+        const newAction: Action = {
+            id: Date.now(),
+            type,
+            target: 'your-selector',
+            value: ''
+        };
+        setCurrentStep({ ...currentStep, actions: [...currentStep.actions, newAction] });
+    }
+  };
+
+  const handleActionDelete = (actionId: number) => {
+    if (currentStep) {
+        const newActions = currentStep.actions.filter(action => action.id !== actionId);
+        setCurrentStep({ ...currentStep, actions: newActions });
+    }
+  };
+
   const handleSaveChanges = () => {
     if (currentStep) {
       onSave(currentStep);
@@ -85,7 +150,10 @@ export default function PropertiesPanel({ selectedStep, onClose, onSave }: Prope
   };
 
   return (
-     <div className={`absolute top-0 right-0 h-full transition-transform duration-300 ease-in-out ${selectedStep ? 'translate-x-0' : 'translate-x-full'} w-96 z-10`}>
+     <div className={cn(
+        "absolute top-0 right-0 h-full transition-transform duration-300 ease-in-out w-96 z-10",
+        selectedStep ? 'translate-x-0' : 'translate-x-full'
+      )}>
         <div className={`bg-background border-l h-full flex flex-col`}>
             {currentStep && (
                 <>
@@ -113,8 +181,14 @@ export default function PropertiesPanel({ selectedStep, onClose, onSave }: Prope
                         <div className="space-y-4">
                             <Label>Actions</Label>
                             {currentStep.actions.map(action => (
-                                <ActionForm key={action.id} action={action} onActionChange={handleActionChange} />
+                                <ActionForm 
+                                    key={action.id} 
+                                    action={action} 
+                                    onActionChange={handleActionChange} 
+                                    onActionDelete={handleActionDelete}
+                                />
                             ))}
+                            <AddActionButton onAddAction={handleAddAction} />
                         </div>
 
                     </div>
