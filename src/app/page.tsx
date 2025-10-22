@@ -3,7 +3,6 @@ import { useState } from "react";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import SidebarContent from "@/components/dashboard/sidebar-content";
 import MainDashboard from "@/components/dashboard/main-dashboard";
-import NodePalette from "@/components/dashboard/node-palette";
 import AuthenticationView from "@/components/dashboard/authentication-view";
 import ScanConfigView from "@/components/dashboard/scan-config-view";
 import TestSettingsView from "@/components/dashboard/test-settings-view";
@@ -43,12 +42,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-screen w-full bg-background">
       <SidebarProvider>
         <Sidebar>
           <SidebarContent activeView={activeView} setActiveView={setActiveView} />
         </Sidebar>
-        <NodePalette />
         <SidebarInset>
           {renderContent()}
         </SidebarInset>

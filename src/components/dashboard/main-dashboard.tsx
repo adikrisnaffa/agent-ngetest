@@ -11,6 +11,7 @@ import { fetchUrlContent } from "@/app/actions";
 import { generateTest } from "@/ai/flows/generate-test-flow";
 import type { GenerateTestInput } from "@/ai/flows/schemas";
 import CodeDialog from "./code-dialog";
+import { NodePalette } from "../dashboard/node-palette";
 
 export type Action = {
   id: number;
@@ -352,9 +353,16 @@ export default function MainDashboard() {
     setFlowTitle(newTitle);
   }
 
+  const handleCreateNewFlow = () => {
+    setSteps([]);
+    setFlowTitle("Untitled Flow");
+    setSelectedStep(null);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <Header onRun={handleRunTest} onStop={handleStopTest} isRunning={isRunning} onExport={handleExport} isExporting={isExporting} />
+      <NodePalette onAddNode={handleAddStep} onCreateFlow={handleCreateNewFlow} />
       <main className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <div className="p-4 md:px-8 md:pt-8 md:pb-0">
