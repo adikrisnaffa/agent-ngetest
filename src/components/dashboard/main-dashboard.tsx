@@ -77,6 +77,9 @@ export default function MainDashboard() {
   const [isExporting, setIsExporting] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
+
 
   const handleAddStep = (type: string) => {
     const newStep: Step = {
@@ -129,45 +132,65 @@ export default function MainDashboard() {
     });
   };
 
-  const handleRunTest = () => {
-    // Simulate test run
-    let currentStepIndex = 0;
-    
-    const runNextStep = () => {
-        if (currentStepIndex >= steps.length) {
-            // Reset all to idle after a short delay
-            setTimeout(() => setSteps(prev => prev.map(s => ({...s, status: 'idle'}))), 1000);
-            return;
+    const cleanupTimeouts = () => {
+        runTimeoutRef.current.forEach(clearTimeout);
+        runTimeoutRef.current = [];
+    };
+
+    const handleRunTest = () => {
+        if (isRunning) return;
+        setIsRunning(true);
+        cleanupTimeouts();
+
+        let currentStepIndex = 0;
+        
+        const runNextStep = () => {
+            if (currentStepIndex >= steps.length) {
+                const finalTimeout = setTimeout(() => {
+                    setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
+                    setIsRunning(false);
+                }, 1000);
+                runTimeoutRef.current.push(finalTimeout);
+                return;
+            }
+
+            const currentStepId = steps[currentStepIndex].id;
+
+            setSteps(prev => prev.map(s => s.id === currentStepId ? {...s, status: 'running'} : s));
+
+            const stepTimeout = setTimeout(() => {
+                const isSuccess = Math.random() > 0.2; // 80% chance of success
+                setSteps(prev => prev.map(s => {
+                    if (s.id === currentStepId) {
+                        return {...s, status: isSuccess ? 'success' : 'error' };
+                    }
+                    return s;
+                }));
+
+                if(isSuccess) {
+                    currentStepIndex++;
+                    runNextStep();
+                } else {
+                     const errorTimeout = setTimeout(() => {
+                        setSteps(prev => prev.map(s => (s.status !== 'success' && s.status !== 'error') ? {...s, status: 'idle'} : s));
+                        setIsRunning(false);
+                     }, 1000);
+                     runTimeoutRef.current.push(errorTimeout);
+                }
+            }, 1000); // 1 second per step
+            runTimeoutRef.current.push(stepTimeout);
         }
 
-        const currentStepId = steps[currentStepIndex].id;
+        setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
+        const startTimeout = setTimeout(runNextStep, 500);
+        runTimeoutRef.current.push(startTimeout);
+    };
 
-        // Set current step to running
-        setSteps(prev => prev.map(s => s.id === currentStepId ? {...s, status: 'running'} : s));
-
-        setTimeout(() => {
-            const isSuccess = Math.random() > 0.2; // 80% chance of success
-            setSteps(prev => prev.map(s => {
-                if (s.id === currentStepId) {
-                    return {...s, status: isSuccess ? 'success' : 'error' };
-                }
-                return s;
-            }));
-
-            if(isSuccess) {
-                currentStepIndex++;
-                runNextStep();
-            } else {
-                 // Stop on error and reset others not yet run
-                 setSteps(prev => prev.map(s => (s.status !== 'success' && s.status !== 'error') ? {...s, status: 'idle'} : s));
-            }
-        }, 1000); // 1 second per step
+    const handleStopTest = () => {
+        cleanupTimeouts();
+        setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
+        setIsRunning(false);
     }
-
-    // Reset all to idle before starting
-    setSteps(prev => prev.map(s => ({...s, status: 'idle'})))
-    setTimeout(runNextStep, 500);
-  }
   
   const handleLoadInspector = async (url?: string) => {
     const urlToLoad = url || inspectorUrl;
@@ -328,7 +351,7 @@ export default function MainDashboard() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <Header onRun={handleRunTest} onExport={handleExport} isExporting={isExporting} />
+      <Header onRun={handleRunTest} onStop={handleStopTest} isRunning={isRunning} onExport={handleExport} isExporting={isExporting} />
       <main className="flex-1 overflow-hidden">
         <Tabs defaultValue="flow-builder" className="h-full flex flex-col">
           <div className="p-4 md:px-8 md:pt-8 md:pb-0">
@@ -337,8 +360,8 @@ export default function MainDashboard() {
               <TabsTrigger value="inspector">Inspector</TabsTrigger>
             </TabsList>
           </div>
-          <TabsContent value="flow-builder" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex">
-            <div className="flex-1 overflow-hidden h-full">
+          <TabsContent value="flow-builder" className="flex-1 overflow-hidden p-4 md:p-8 pt-4">
+            <div className="flex-1 overflow-hidden h-full relative">
                 <FlowCanvas 
                     steps={steps} 
                     onStepSelect={setSelectedStep} 
@@ -347,13 +370,13 @@ export default function MainDashboard() {
                     onDeleteStep={handleDeleteStep}
                     onMoveStep={handleMoveStep}
                 />
+                 <PropertiesPanel 
+                    key={selectedStep?.id} // Add key to re-mount component on selection change
+                    selectedStep={selectedStep} 
+                    onClose={() => setSelectedStep(null)}
+                    onSave={handleUpdateStep}
+                />
             </div>
-            <PropertiesPanel 
-              key={selectedStep?.id} // Add key to re-mount component on selection change
-              selectedStep={selectedStep} 
-              onClose={() => setSelectedStep(null)}
-              onSave={handleUpdateStep}
-            />
           </TabsContent>
           <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
             <InspectorPanel 

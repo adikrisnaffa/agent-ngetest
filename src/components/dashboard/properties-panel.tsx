@@ -85,10 +85,10 @@ export default function PropertiesPanel({ selectedStep, onClose, onSave }: Prope
   };
 
   return (
-    <div className={`transition-all duration-300 ease-in-out ${selectedStep ? 'w-96 ml-8' : 'w-0'}`}>
-        <div className={`bg-background border-l h-full ${selectedStep ? 'block' : 'hidden'} overflow-hidden rounded-lg`}>
+     <div className={`absolute top-0 right-0 h-full transition-transform duration-300 ease-in-out ${selectedStep ? 'translate-x-0' : 'translate-x-full'} w-96 z-10`}>
+        <div className={`bg-background border-l h-full flex flex-col`}>
             {currentStep && (
-                <div className="flex flex-col h-full">
+                <>
                     <header className="p-4 border-b flex items-center justify-between flex-shrink-0">
                         <div className="flex items-center gap-2">
                             <Workflow className="h-5 w-5 text-primary" />
@@ -121,7 +121,7 @@ export default function PropertiesPanel({ selectedStep, onClose, onSave }: Prope
                      <footer className="p-4 border-t mt-auto">
                         <Button className="w-full" onClick={handleSaveChanges}>Save Changes</Button>
                     </footer>
-                </div>
+                </>
             )}
         </div>
     </div>

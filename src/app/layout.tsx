@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Automation Aent',
+  title: 'Agent Ngetest',
   description: 'Build test automation flows with ease.',
 };
 

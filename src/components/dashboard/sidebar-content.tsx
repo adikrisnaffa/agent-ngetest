@@ -30,7 +30,7 @@ export default function SidebarContent({ activeView, setActiveView }: SidebarCon
          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <Bot className="h-6 w-6 text-primary" />
-                <h1 className="text-lg font-semibold tracking-wider group-data-[collapsible=icon]:hidden">Aent</h1>
+                <h1 className="text-lg font-semibold tracking-wider group-data-[collapsible=icon]:hidden">Agent Ngetest</h1>
             </div>
             <Button variant="ghost" size="icon" className="h-7 w-7 group-data-[collapsible=icon]:hidden">
                 <ChevronsRight className="h-5 w-5" />
