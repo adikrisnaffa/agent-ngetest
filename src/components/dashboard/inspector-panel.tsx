@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ interface InspectorPanelProps {
     isInspectorActive: boolean;
     onToggleInspector: () => void;
     selector: string;
+    onCreateStep: (selector: string) => void;
 }
 
 export default function InspectorPanel({
@@ -23,7 +25,8 @@ export default function InspectorPanel({
     isLoading,
     isInspectorActive,
     onToggleInspector,
-    selector
+    selector,
+    onCreateStep
 }: InspectorPanelProps) {
     return (
         <div className="flex-shrink-0 space-y-4">
@@ -45,7 +48,7 @@ export default function InspectorPanel({
             </div>
             <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
                  <div className="flex items-center space-x-3">
-                    <Switch id="inspector-mode" checked={isInspectorActive} onCheckedChange={onToggleInspector} />
+                    <Switch id="inspector-mode" checked={isInspectorActive} onCheckedChange={onToggleInspector} disabled={!url || isLoading} />
                     <Label htmlFor="inspector-mode" className="flex items-center gap-2 cursor-pointer">
                         <MousePointer className="h-5 w-5" />
                         Inspector Mode
@@ -53,7 +56,7 @@ export default function InspectorPanel({
                 </div>
                 <div className="flex items-center gap-2">
                     <Input readOnly placeholder="Click an element to get its selector" value={selector} className="w-80 bg-background" />
-                    <Button variant="secondary">
+                    <Button variant="secondary" disabled={!selector} onClick={() => onCreateStep(selector)}>
                         <Zap className="mr-2"/>
                         Create Step
                     </Button>

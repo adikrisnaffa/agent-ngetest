@@ -46,19 +46,45 @@ export default function MainDashboard() {
   const [isRunning, setIsRunning] = useState(false);
   const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
+  const [activeTab, setActiveTab] = useState("flow-builder");
 
 
-  const handleAddStep = (type: string) => {
+  const handleAddStep = (type: string, target?: string) => {
     const newStep: Step = {
-        id: Date.now(), // Use a more unique ID
+        id: Date.now(),
         title: `${type} Step`,
         type: type,
-        actions: [{ id: Date.now(), type: type, target: "your-selector", value: `your-value` }],
+        actions: [{ id: Date.now(), type: type, target: target || "your-selector", value: "" }],
         status: 'idle'
     };
     setSteps([...steps, newStep]);
-    setSelectedStep(newStep); // Select the new step
+    setSelectedStep(newStep);
   }
+
+  const handleCreateStepFromInspector = (selector: string) => {
+    if (!selector) return;
+
+    // Simple logic to guess the action type
+    let actionType = 'Click';
+    if (selector.includes('input') || selector.includes('textarea')) {
+        actionType = 'Type';
+    } else if (selector.includes('button') || selector.includes('a[href]')) {
+        actionType = 'Click';
+    }
+
+    const newStep: Step = {
+        id: Date.now(),
+        title: `${actionType} on element`,
+        type: actionType,
+        actions: [{ id: Date.now(), type: actionType, target: selector, value: "" }],
+        status: 'idle'
+    };
+
+    setSteps(prevSteps => [...prevSteps, newStep]);
+    setSelectedStep(newStep);
+    setSelectedElementSelector(''); // Clear selector after creating step
+    setActiveTab("flow-builder"); // Switch back to the flow builder
+  };
 
   const handleUpdateStep = (updatedStep: Step) => {
     setSteps(steps.map(step => step.id === updatedStep.id ? updatedStep : step));
@@ -80,13 +106,12 @@ export default function MainDashboard() {
         if (!draggedStep) return prevSteps;
 
         const remainingSteps = prevSteps.filter(step => step.id !== draggedId);
-        const targetIndex = remainingSteps.findIndex(step => step.id === targetId);
         
-        // If dropping at the beginning
-        if (targetId === 0) {
+        if (targetId === 0) { // Dropped at the very beginning
             return [draggedStep, ...remainingSteps];
         }
 
+        const targetIndex = remainingSteps.findIndex(step => step.id === targetId);
         const newIndex = targetIndex + 1;
 
         if (newIndex >= 0 && newIndex <= remainingSteps.length) {
@@ -111,12 +136,10 @@ export default function MainDashboard() {
 
         let currentStepIndex = 0;
         
-        // Reset all statuses to idle before starting
         setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
 
         const runNextStep = () => {
             if (currentStepIndex >= steps.length) {
-                // All steps are done, wait a bit then reset to idle
                 const finalTimeout = setTimeout(() => {
                     setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
                     setIsRunning(false);
@@ -127,10 +150,8 @@ export default function MainDashboard() {
 
             const currentStepId = steps[currentStepIndex].id;
 
-            // Set current step to 'running'
             setSteps(prev => prev.map(s => s.id === currentStepId ? {...s, status: 'running'} : s));
 
-            // Simulate step execution
             const stepTimeout = setTimeout(() => {
                 const isSuccess = Math.random() > 0.2; // 80% chance of success
                 setSteps(prev => prev.map(s => {
@@ -144,18 +165,16 @@ export default function MainDashboard() {
                     currentStepIndex++;
                     runNextStep();
                 } else {
-                     // On failure, stop the run and reset non-completed steps
                      const errorTimeout = setTimeout(() => {
                         setSteps(prev => prev.map(s => (s.status !== 'success' && s.status !== 'error') ? {...s, status: 'idle'} : s));
                         setIsRunning(false);
                      }, 1000);
                      runTimeoutRef.current.push(errorTimeout);
                 }
-            }, 1000); // 1 second per step
+            }, 1000); 
             runTimeoutRef.current.push(stepTimeout);
         }
 
-        // Short delay before starting the first step
         const startTimeout = setTimeout(runNextStep, 100);
         runTimeoutRef.current.push(startTimeout);
     };
@@ -163,7 +182,6 @@ export default function MainDashboard() {
 
     const handleStopTest = () => {
         cleanupTimeouts();
-        // Reset any 'running' steps to 'idle'
         setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
         setIsRunning(false);
     }
@@ -222,11 +240,11 @@ export default function MainDashboard() {
 
             function getCssSelector(el) {
               if (!(el instanceof Element)) return;
-              const path = [];
-              while (el.nodeType === Node.ELEMENT_NODE) {
+              let path = [];
+              while (el && el.nodeType === Node.ELEMENT_NODE) {
                 let selector = el.nodeName.toLowerCase();
                 if (el.id) {
-                  selector += '#' + el.id;
+                  selector += '#' + el.id.replace( /(:|\\.|\\[)/g, '\\\\$1' );
                   path.unshift(selector);
                   break;
                 } else {
@@ -278,7 +296,6 @@ export default function MainDashboard() {
       } else {
         if (script) {
           script.remove();
-          // We might need to send a message to the script to remove its own listeners
         }
       }
     }
@@ -295,7 +312,6 @@ export default function MainDashboard() {
         steps: steps.map(s => ({
           title: s.title,
           actions: s.actions.map(a => {
-            // Reconstruct the 'detail' string for the AI prompt
             let detail = '';
             if (a.type === 'Navigate') {
               detail = a.target;
@@ -329,7 +345,7 @@ export default function MainDashboard() {
     <div className="flex flex-col h-screen bg-background">
       <Header onRun={handleRunTest} onStop={handleStopTest} isRunning={isRunning} onExport={handleExport} isExporting={isExporting} />
       <main className="flex-1 overflow-hidden">
-        <Tabs defaultValue="flow-builder" className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <div className="p-4 md:px-8 md:pt-8 md:pb-0">
             <TabsList>
               <TabsTrigger value="flow-builder">Flow Builder</TabsTrigger>
@@ -349,7 +365,7 @@ export default function MainDashboard() {
                     onTitleChange={setFlowTitle}
                 />
                  <PropertiesPanel 
-                    key={selectedStep?.id} // Add key to re-mount component on selection change
+                    key={selectedStep?.id}
                     selectedStep={selectedStep} 
                     onClose={() => setSelectedStep(null)}
                     onSave={handleUpdateStep}
@@ -365,6 +381,7 @@ export default function MainDashboard() {
               isInspectorActive={isInspectorActive}
               onToggleInspector={() => setIsInspectorActive(!isInspectorActive)}
               selector={selectedElementSelector}
+              onCreateStep={handleCreateStepFromInspector}
             />
             <div className="flex-1 border rounded-lg bg-card overflow-hidden">
                 {isLoading ? (
