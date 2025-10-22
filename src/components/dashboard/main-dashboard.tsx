@@ -79,6 +79,7 @@ export default function MainDashboard() {
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
+  const [flowTitle, setFlowTitle] = useState("Untitled Flow");
 
 
   const handleAddStep = (type: string) => {
@@ -144,8 +145,12 @@ export default function MainDashboard() {
 
         let currentStepIndex = 0;
         
+        // Reset all statuses to idle before starting
+        setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
+
         const runNextStep = () => {
             if (currentStepIndex >= steps.length) {
+                // All steps are done, wait a bit then reset to idle
                 const finalTimeout = setTimeout(() => {
                     setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
                     setIsRunning(false);
@@ -156,8 +161,10 @@ export default function MainDashboard() {
 
             const currentStepId = steps[currentStepIndex].id;
 
+            // Set current step to 'running'
             setSteps(prev => prev.map(s => s.id === currentStepId ? {...s, status: 'running'} : s));
 
+            // Simulate step execution
             const stepTimeout = setTimeout(() => {
                 const isSuccess = Math.random() > 0.2; // 80% chance of success
                 setSteps(prev => prev.map(s => {
@@ -171,6 +178,7 @@ export default function MainDashboard() {
                     currentStepIndex++;
                     runNextStep();
                 } else {
+                     // On failure, stop the run and reset non-completed steps
                      const errorTimeout = setTimeout(() => {
                         setSteps(prev => prev.map(s => (s.status !== 'success' && s.status !== 'error') ? {...s, status: 'idle'} : s));
                         setIsRunning(false);
@@ -181,13 +189,15 @@ export default function MainDashboard() {
             runTimeoutRef.current.push(stepTimeout);
         }
 
-        setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
-        const startTimeout = setTimeout(runNextStep, 500);
+        // Short delay before starting the first step
+        const startTimeout = setTimeout(runNextStep, 100);
         runTimeoutRef.current.push(startTimeout);
     };
 
+
     const handleStopTest = () => {
         cleanupTimeouts();
+        // Reset any 'running' steps to 'idle'
         setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
         setIsRunning(false);
     }
@@ -369,6 +379,8 @@ export default function MainDashboard() {
                     onAddStep={handleAddStep}
                     onDeleteStep={handleDeleteStep}
                     onMoveStep={handleMoveStep}
+                    flowTitle={flowTitle}
+                    onTitleChange={setFlowTitle}
                 />
                  <PropertiesPanel 
                     key={selectedStep?.id} // Add key to re-mount component on selection change
@@ -420,3 +432,5 @@ export default function MainDashboard() {
     </div>
   );
 }
+
+    

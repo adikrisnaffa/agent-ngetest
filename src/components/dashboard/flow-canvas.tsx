@@ -1,11 +1,13 @@
+
 "use client";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Pencil } from "lucide-react";
+import { ArrowRight, Pencil, Check } from "lucide-react";
 import FlowStep from "./flow-step";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card } from "../ui/card";
 import type { Step } from "./main-dashboard";
 import { cn } from "@/lib/utils";
+import { Input } from "../ui/input";
 
 interface FlowCanvasProps {
     steps: Step[];
@@ -14,6 +16,8 @@ interface FlowCanvasProps {
     onAddStep: (type: string) => void;
     onDeleteStep: (id: number) => void;
     onMoveStep: (draggedId: number, targetId: number) => void;
+    flowTitle: string;
+    onTitleChange: (newTitle: string) => void;
 }
 
 const DropZone = ({ onDrop }: { onDrop: () => void }) => {
@@ -45,7 +49,68 @@ const DropZone = ({ onDrop }: { onDrop: () => void }) => {
     )
 }
 
-export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddStep, onDeleteStep, onMoveStep }: FlowCanvasProps) {
+const FlowTitle = ({ title, onTitleChange }: { title: string, onTitleChange: (newTitle: string) => void }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentTitle, setCurrentTitle] = useState(title);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [isEditing]);
+    
+    const handleSave = () => {
+        if (currentTitle.trim()) {
+            onTitleChange(currentTitle.trim());
+        } else {
+            setCurrentTitle(title); // Revert if empty
+        }
+        setIsEditing(false);
+    }
+
+    if (isEditing) {
+        return (
+            <div className="flex items-center gap-2">
+                <Input
+                    ref={inputRef}
+                    value={currentTitle}
+                    onChange={(e) => setCurrentTitle(e.target.value)}
+                    onBlur={handleSave}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSave();
+                        if (e.key === 'Escape') {
+                            setCurrentTitle(title);
+                            setIsEditing(false);
+                        }
+                    }}
+                    className="text-2xl font-bold tracking-tight h-10 w-80"
+                />
+                 <Button onClick={handleSave} size="icon" className="h-9 w-9">
+                    <Check className="h-5 w-5"/>
+                </Button>
+            </div>
+        )
+    }
+
+    return (
+         <div className="flex items-center gap-3 group">
+            <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground"
+                onClick={() => setIsEditing(true)}
+            >
+                <Pencil className="h-4 w-4" />
+            </Button>
+        </div>
+    )
+}
+
+
+export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddStep, onDeleteStep, onMoveStep, flowTitle, onTitleChange }: FlowCanvasProps) {
   
   const handleDropOnCanvas = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -77,12 +142,7 @@ export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddS
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold tracking-tight">Untitled Flow</h2>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </div>
+        <FlowTitle title={flowTitle} onTitleChange={onTitleChange} />
       </div>
       
       <div 
@@ -113,7 +173,9 @@ export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddS
               {steps.map((step) => (
                 <React.Fragment key={step.id}>
                     <div className="flex items-center gap-2">
-                        <DropZone onDrop={() => handleStepDrop(step.id)} />
+                        <div className="w-full h-full" onDragOver={(e) => e.preventDefault()} onDrop={() => handleStepDrop(step.id)} >
+                            <div className="w-20 h-px bg-gray-500"/>
+                        </div>
                         <div 
                             onClick={() => onStepSelect(step)} 
                             draggable 
@@ -132,3 +194,5 @@ export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddS
     </div>
   );
 }
+
+    
