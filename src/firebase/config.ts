@@ -4,7 +4,7 @@ export const firebaseConfig = {
   apiKey: "AIzaSyBHzxC83P-v6qM25tlLaXKobkfi68Gt_5U",
   authDomain: "agent-ngetest.firebaseapp.com",
   projectId: "agent-ngetest",
-  storageBucket: "agent-ngetest.appspot.com",
+  storageBucket: "agent-ngetest.firebasestorage.app",
   messagingSenderId: "65837212985",
   appId: "1:65837212985:web:8c767b9d5900a8a1e774e8",
   measurementId: "G-5VC30M3K7V"
