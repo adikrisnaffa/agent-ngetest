@@ -146,6 +146,9 @@ export default function MainDashboard() {
         
         for (const result of results) {
             setSteps(prev => prev.map(s => s.id === result.stepId ? {...s, status: result.status } : s));
+            if (result.status === 'error') {
+              break; // Stop updating statuses on first error
+            }
         }
 
       } catch (error) {
@@ -185,88 +188,6 @@ export default function MainDashboard() {
       window.removeEventListener('message', handleMessage);
     };
   }, []);
-
-  // Inject script into iframe when inspector mode is toggled
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe && iframe.contentWindow) {
-      const doc = iframe.contentWindow.document;
-      const scriptId = 'inspector-script';
-      let script = doc.getElementById(scriptId) as HTMLScriptElement | null;
-
-      if (isInspectorActive) {
-        if (!script) {
-          script = doc.createElement('script');
-          script.id = scriptId;
-          script.innerHTML = \`
-            let highlightedElement = null;
-            const highlightStyle = 'outline: 2px solid #BE52FF; background-color: rgba(190, 82, 255, 0.2); box-shadow: 0 0 10px rgba(190, 82, 255, 0.5);';
-
-            function getCssSelector(el) {
-              if (!(el instanceof Element)) return;
-              let path = [];
-              while (el && el.nodeType === Node.ELEMENT_NODE) {
-                let selector = el.nodeName.toLowerCase();
-                if (el.id) {
-                  selector += '#' + el.id.replace( /(:|\\.|\\[)/g, '\\\\$1' );
-                  path.unshift(selector);
-                  break;
-                } else {
-                  let sib = el, nth = 1;
-                  while (sib = sib.previousElementSibling) {
-                    if (sib.nodeName.toLowerCase() == selector) nth++;
-                  }
-                  if (nth != 1) selector += ":nth-of-type("+nth+")";
-                }
-                path.unshift(selector);
-                el = el.parentNode;
-              }
-              return path.join(" > ");
-            }
-
-            function handleMouseOver(e) {
-              highlightedElement?.style.removeProperty('outline');
-              highlightedElement?.style.removeProperty('background-color');
-              highlightedElement?.style.removeProperty('box-shadow');
-              highlightedElement = e.target;
-              highlightedElement.style.cssText += highlightStyle;
-            }
-
-            function handleMouseOut(e) {
-              e.target.style.removeProperty('outline');
-              e.target.style.removeProperty('background-color');
-              e.target.style.removeProperty('box-shadow');
-            }
-            
-            function handleClick(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const selector = getCssSelector(e.target);
-                window.parent.postMessage({ type: 'element-selected', selector: selector }, '*');
-                
-                // Cleanup
-                document.removeEventListener('mouseover', handleMouseOver);
-                document.removeEventListener('mouseout', handleMouseOut);
-                document.removeEventListener('click', handleClick, true);
-                highlightedElement?.style.removeProperty('outline');
-                highlightedElement?.style.removeProperty('background-color');
-                highlightedElement?.style.removeProperty('box-shadow');
-            }
-
-            document.addEventListener('mouseover', handleMouseOver);
-            document.addEventListener('mouseout', handleMouseOut);
-            document.addEventListener('click', handleClick, true);
-          \`;
-          doc.body.appendChild(script);
-        }
-      } else {
-        if (script) {
-          script.remove();
-        }
-      }
-    }
-  }, [isInspectorActive, iframeContent]);
 
   const handleTitleChange = (newTitle: string) => {
     setFlowTitle(newTitle);
