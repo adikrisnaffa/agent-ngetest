@@ -191,39 +191,9 @@ export default function MainDashboard() {
 
     setIsLoading(true);
     setIframeContent(null);
-
-    let finalUrl = urlToLoad;
-    if (!finalUrl.startsWith('http')) {
-        finalUrl = 'http://' + finalUrl;
-    }
-    setInspectorUrl(finalUrl);
-
-    try {
-        const response = await fetch(`/api/proxy?url=${encodeURIComponent(finalUrl)}`);
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
-            throw new Error(errorMessage);
-        }
-        let html = await response.text();
-        
-        // Inject a <base> tag to correctly resolve relative URLs for assets (CSS, JS, images)
-        const baseTag = `<base href="${new URL(finalUrl).origin}" />`;
-        if (html.includes('<head>')) {
-            html = html.replace('<head>', `<head>${baseTag}`);
-        } else {
-            html = baseTag + html;
-        }
-
-        setIframeContent(html);
-    } catch (error) {
-        if (error instanceof Error) {
-            setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Error loading page</h1><p>${error.message}</p></div></html>`);
-        } else {
-            setIframeContent(`<html><body><h1>An unknown error occurred</h1></body></html>`);
-        }
-    }
     
+    // This is a simplified version that avoids the proxy for stability
+    setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Inspector Disabled for Direct Load</h1><p>Due to browser security policies, direct loading of external sites is restricted. Please test the URL in a separate browser tab.</p><p>URL: ${urlToLoad}</p></div></html>`);
     setIsLoading(false);
   }
 
