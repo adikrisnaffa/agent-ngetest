@@ -152,8 +152,8 @@ export default function MainDashboard() {
             setSteps(prev => prev.map(s => s.id === currentStep.id ? {...s, status: 'running'} : s));
 
             const stepTimeout = setTimeout(() => {
-                // Simulate step success or failure
-                const isSuccess = Math.random() > 0.2; // 80% chance of success
+                // For 'Navigate' steps, always succeed. For others, simulate random success/failure.
+                const isSuccess = currentStep.type === 'Navigate' ? true : Math.random() > 0.2;
                 
                 setSteps(prev => prev.map(s => {
                     if (s.id === currentStep.id) {
