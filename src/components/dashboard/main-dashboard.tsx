@@ -31,35 +31,6 @@ interface FlowDoc {
   steps: Step[];
 }
 
-async function fetchUrlContentViaProxy(url: string): Promise<string> {
-    try {
-        const response = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
-            throw new Error(errorMessage);
-        }
-        let html = await response.text();
-        
-        // Inject a <base> tag to correctly resolve relative URLs for assets (CSS, JS, images)
-        const baseTag = `<base href="${new URL(url).origin}" />`;
-        if (html.includes('<head>')) {
-            html = html.replace('<head>', `<head>${baseTag}`);
-        } else {
-            html = baseTag + html;
-        }
-
-        return html;
-    } catch (error) {
-        console.error('Failed to fetch URL content via proxy:', error);
-        if (error instanceof Error) {
-            return `<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Error fetching page</h1><p>URL: ${url}</p><p>Error: ${error.message}</p><p>This might be due to rate limiting (like status 429) or other security policies of the target website. Please try a different URL or check your network.</p></div></html>`;
-        }
-        return '<html><body><h1>An unknown error occurred</h1></body></html>';
-    }
-}
-
-
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
@@ -228,8 +199,23 @@ export default function MainDashboard() {
     setInspectorUrl(finalUrl);
 
     try {
-        const content = await fetchUrlContentViaProxy(finalUrl);
-        setIframeContent(content);
+        const response = await fetch(`/api/proxy?url=${encodeURIComponent(finalUrl)}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
+            throw new Error(errorMessage);
+        }
+        let html = await response.text();
+        
+        // Inject a <base> tag to correctly resolve relative URLs for assets (CSS, JS, images)
+        const baseTag = `<base href="${new URL(finalUrl).origin}" />`;
+        if (html.includes('<head>')) {
+            html = html.replace('<head>', `<head>${baseTag}`);
+        } else {
+            html = baseTag + html;
+        }
+
+        setIframeContent(html);
     } catch (error) {
         if (error instanceof Error) {
             setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Error loading page</h1><p>${error.message}</p></div></html>`);
@@ -407,6 +393,7 @@ export default function MainDashboard() {
                   ) : (
                       <div className="flex items-center justify-center h-full">
                           <div className="text-center text-muted-foreground">
+                              <Globe className="h-10 w-10 mx-auto mb-4 text-border" />
                               <p className="font-medium">Web Inspector</p>
                               <p className="text-sm">Enter a URL and click "Load Page" to begin inspecting elements.</p>
                           </div>
