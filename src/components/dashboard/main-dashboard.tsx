@@ -35,7 +35,7 @@ interface FlowDoc {
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
-  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85/backend/login");
+  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85");
   const [iframeContent, setIframeContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInspectorActive, setIsInspectorActive] = useState(false);
@@ -138,7 +138,7 @@ export default function MainDashboard() {
         
         setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
 
-        const runNextStep = () => {
+        const runNextStep = async () => {
             if (currentStepIndex >= steps.length) {
                 const finalTimeout = setTimeout(() => {
                     setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
@@ -151,6 +151,13 @@ export default function MainDashboard() {
             const currentStep = steps[currentStepIndex];
 
             setSteps(prev => prev.map(s => s.id === currentStep.id ? {...s, status: 'running'} : s));
+            
+            // If it's a navigate step, load it in the inspector
+            if (currentStep.type.toLowerCase() === 'navigate' && currentStep.actions[0]?.target) {
+                setActiveTab("inspector");
+                await handleLoadInspector(currentStep.actions[0].target);
+            }
+
 
             const stepTimeout = setTimeout(() => {
                 const isSuccess = Math.random() > 0.2; // 80% chance of success
@@ -385,5 +392,3 @@ export default function MainDashboard() {
     </div>
   );
 }
-
-    
