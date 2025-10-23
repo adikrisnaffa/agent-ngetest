@@ -8,7 +8,6 @@ import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
 import { Loader2 } from "lucide-react";
-import { fetchUrlContent } from "@/app/actions";
 import { NodePalette } from "../dashboard/node-palette";
 
 export type Action = {
@@ -32,10 +31,37 @@ interface FlowDoc {
   steps: Step[];
 }
 
+async function fetchUrlContentViaProxy(url: string): Promise<string> {
+    try {
+        const response = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        let html = await response.text();
+        
+        // Inject a <base> tag to correctly resolve relative URLs for assets (CSS, JS, images)
+        const baseTag = `<base href="${new URL(url).origin}" />`;
+        if (html.includes('<head>')) {
+            html = html.replace('<head>', `<head>${baseTag}`);
+        } else {
+            html = baseTag + html;
+        }
+
+        return html;
+    } catch (error) {
+        console.error('Failed to fetch URL content via proxy:', error);
+        if (error instanceof Error) {
+            return `<html><body><h1>Error fetching page</h1><p>${error.message}</p><p>Please ensure the target URL is correct and the server is running.</p></body></html>`;
+        }
+        return '<html><body><h1>An unknown error occurred</h1></body></html>';
+    }
+}
+
+
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
-  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85");
+  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85/backend/login");
   const [iframeContent, setIframeContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInspectorActive, setIsInspectorActive] = useState(false);
@@ -199,20 +225,16 @@ export default function MainDashboard() {
 
     setIsLoading(true);
     setIframeContent(null);
-    try {
-        let finalUrl = urlToLoad;
-        if (!finalUrl.startsWith('http')) {
-            finalUrl = 'https://' + finalUrl;
-        }
-        setInspectorUrl(finalUrl);
-        const content = await fetchUrlContent(finalUrl);
-        setIframeContent(content);
-    } catch (error) {
-        console.error("Failed to fetch content:", error);
-        setIframeContent("<p>Failed to load page. Please check the URL and try again.</p>");
-    } finally {
-        setIsLoading(false);
+
+    let finalUrl = urlToLoad;
+    if (!finalUrl.startsWith('http')) {
+        finalUrl = 'http://' + finalUrl;
     }
+    setInspectorUrl(finalUrl);
+
+    const content = await fetchUrlContentViaProxy(finalUrl);
+    setIframeContent(content);
+    setIsLoading(false);
   }
 
   // Handle messaging from iframe

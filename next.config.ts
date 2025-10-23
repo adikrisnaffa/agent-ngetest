@@ -30,6 +30,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/proxy',
+        destination: '/api/proxy',
+      },
+      {
+        source: '/api/proxy/:path*',
+        destination: '/api/proxy/:path*',
+      }
+    ]
+  }
 };
 
 export default nextConfig;
