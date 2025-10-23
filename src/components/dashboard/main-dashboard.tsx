@@ -8,9 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
 import { Loader2 } from "lucide-react";
 import { fetchUrlContent } from "@/app/actions";
-import { generateTest } from "@/ai/flows/generate-test-flow";
-import type { GenerateTestInput } from "@/ai/flows/schemas";
-import CodeDialog from "./code-dialog";
 import { NodePalette } from "../dashboard/node-palette";
 
 export type Action = {
@@ -44,9 +41,6 @@ export default function MainDashboard() {
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [selectedElementSelector, setSelectedElementSelector] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState("");
-  const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
@@ -310,45 +304,6 @@ export default function MainDashboard() {
     }
   }, [isInspectorActive, iframeContent]);
 
-
-  const handleExport = async (target: GenerateTestInput['target']) => {
-    setIsExporting(true);
-    setGeneratedCode("");
-    setIsCodeDialogOpen(true);
-
-    try {
-      const result = await generateTest({
-        steps: steps.map(s => ({
-          title: s.title,
-          actions: s.actions.map(a => {
-            let detail = '';
-            if (a.type === 'Navigate') {
-              detail = a.target;
-            } else if (a.type === 'Type') {
-              detail = `'${a.value}' in ${a.target}`;
-            } else if (a.type === 'Assert') {
-              detail = `${a.target} ${a.value}`;
-            } else { // Click
-              detail = a.target;
-            }
-            return {
-              type: a.type,
-              detail: detail
-            }
-          })
-        })),
-        target,
-        url: inspectorUrl,
-      });
-      setGeneratedCode(result.code);
-    } catch (error) {
-      console.error("Failed to generate test:", error);
-      setGeneratedCode(`// An error occurred while generating the test script for ${target}.\n// Please check the console for more details.`);
-    } finally {
-      setIsExporting(false);
-    }
-  }
-
   const handleTitleChange = (newTitle: string) => {
     setFlowTitle(newTitle);
   }
@@ -361,7 +316,7 @@ export default function MainDashboard() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <Header onRun={handleRunTest} onStop={handleStopTest} isRunning={isRunning} onExport={handleExport} isExporting={isExporting} />
+      <Header onRun={handleRunTest} onStop={handleStopTest} isRunning={isRunning} />
       <div className="flex flex-1 overflow-hidden">
         <NodePalette onAddNode={handleAddStep} onCreateFlow={handleCreateNewFlow} />
         <main className="flex-1 overflow-hidden">
@@ -427,12 +382,6 @@ export default function MainDashboard() {
           </Tabs>
         </main>
       </div>
-      <CodeDialog 
-        isOpen={isCodeDialogOpen}
-        onOpenChange={setIsCodeDialogOpen}
-        code={generatedCode}
-        isLoading={isExporting}
-      />
     </div>
   );
 }
