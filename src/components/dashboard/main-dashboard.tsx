@@ -41,7 +41,6 @@ export default function MainDashboard() {
   const [selectedElementSelector, setSelectedElementSelector] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isRunning, setIsRunning] = useState(false);
-  const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
   const [activeTab, setActiveTab] = useState("flow-builder");
 
@@ -124,85 +123,52 @@ export default function MainDashboard() {
     });
   };
 
-    const cleanupTimeouts = () => {
-        runTimeoutRef.current.forEach(clearTimeout);
-        runTimeoutRef.current = [];
-    };
+    const handleRunTest = async () => {
+      if (isRunning) return;
+      setIsRunning(true);
+      // Reset all statuses to idle
+      setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
 
-    const handleRunTest = () => {
-        if (isRunning) return;
-        setIsRunning(true);
-        cleanupTimeouts();
+      try {
+        const response = await fetch('/api/run-test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ steps }),
+        });
 
-        let currentStepIndex = 0;
-        
-        // Reset all statuses to idle before a run
-        setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
-
-        const runNextStep = () => {
-            if (currentStepIndex >= steps.length) {
-                // All steps succeeded
-                setIsRunning(false);
-                return;
-            }
-
-            const currentStep = steps[currentStepIndex];
-
-            // Set current step to 'running'
-            setSteps(prev => prev.map(s => s.id === currentStep.id ? {...s, status: 'running'} : s));
-
-            const stepTimeout = setTimeout(() => {
-                // Deterministic success/failure based on configuration
-                let isSuccess = false;
-                if (currentStep.type === 'Navigate') {
-                    isSuccess = true; // Navigate always succeeds in simulation
-                } else {
-                    // Succeeds if the target is not empty or the default placeholder
-                    const isConfigured = currentStep.actions.every(
-                        action => action.target && action.target.trim() !== '' && action.target.trim() !== 'your-selector'
-                    );
-                    isSuccess = isConfigured;
-                }
-                
-                setSteps(prev => prev.map(s => {
-                    if (s.id === currentStep.id) {
-                        return {...s, status: isSuccess ? 'success' : 'error' };
-                    }
-                    return s;
-                }));
-
-                if(isSuccess) {
-                    currentStepIndex++;
-                    runNextStep();
-                } else {
-                     // On failure, stop the run
-                     setIsRunning(false);
-                }
-            }, 750); // Simulate execution time
-            runTimeoutRef.current.push(stepTimeout);
+        if (!response.ok) {
+          throw new Error('Test execution failed on the server.');
         }
 
-        const startTimeout = setTimeout(runNextStep, 100);
-        runTimeoutRef.current.push(startTimeout);
+        const { results } = await response.json();
+        
+        for (const result of results) {
+            setSteps(prev => prev.map(s => s.id === result.stepId ? {...s, status: result.status } : s));
+        }
+
+      } catch (error) {
+        console.error("Failed to run test:", error);
+        // Optionally, show a toast notification for the error
+      } finally {
+        setIsRunning(false);
+      }
     };
 
 
     const handleStopTest = () => {
-        cleanupTimeouts();
-        // Reset any 'running' steps back to 'idle'
-        setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
+        // With a real backend, stopping a test is more complex.
+        // For now, this just resets the UI state.
         setIsRunning(false);
+        setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
     }
   
   const handleLoadInspector = async (url?: string) => {
+    // This functionality is disabled as it's not reliable.
     const urlToLoad = url || inspectorUrl;
-    if (!urlToLoad) return;
-
     setIsLoading(true);
-    setIframeContent(null);
-    
-    // This is a simplified version that avoids the proxy for stability
-    setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Inspector Disabled</h1><p>Direct loading of external sites is restricted. Please test the URL in a separate browser tab and use the Inspector to get selectors from there.</p><p>URL: ${urlToLoad}</p></div></html>`);
+    setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Inspector Disabled</h1><p>This feature is currently disabled due to technical limitations in reliably fetching external content.</p><p>URL: ${urlToLoad}</p></div></html>`);
     setIsLoading(false);
   }
 
@@ -232,7 +198,7 @@ export default function MainDashboard() {
         if (!script) {
           script = doc.createElement('script');
           script.id = scriptId;
-          script.innerHTML = `
+          script.innerHTML = \`
             let highlightedElement = null;
             const highlightStyle = 'outline: 2px solid #BE52FF; background-color: rgba(190, 82, 255, 0.2); box-shadow: 0 0 10px rgba(190, 82, 255, 0.5);';
 
@@ -291,7 +257,7 @@ export default function MainDashboard() {
             document.addEventListener('mouseover', handleMouseOver);
             document.addEventListener('mouseout', handleMouseOut);
             document.addEventListener('click', handleClick, true);
-          `;
+          \`;
           doc.body.appendChild(script);
         }
       } else {
@@ -386,5 +352,3 @@ export default function MainDashboard() {
     </div>
   );
 }
-
-    
