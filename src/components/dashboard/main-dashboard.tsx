@@ -372,28 +372,26 @@ export default function MainDashboard() {
                 <TabsTrigger value="inspector">Inspector</TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="flow-builder" className="flex-1 overflow-hidden p-4 md:p-8 pt-4">
-                <div className="flex flex-col h-full gap-4">
-                    <div className="flex-1 relative overflow-hidden">
-                        <FlowCanvas 
-                            steps={steps} 
-                            onStepSelect={setSelectedStep} 
-                            selectedStepId={selectedStep?.id ?? null}
-                            onAddStep={handleAddStep}
-                            onDeleteStep={handleDeleteStep}
-                            onMoveStep={handleMoveStep}
-                            flowTitle={flowTitle}
-                            onTitleChange={handleTitleChange}
-                        />
-                        <PropertiesPanel 
-                            key={selectedStep?.id}
-                            selectedStep={selectedStep} 
-                            onClose={() => setSelectedStep(null)}
-                            onSave={handleUpdateStep}
-                        />
-                    </div>
-                    <RunMonitor logs={runLogs} isRunning={isRunning}/>
+            <TabsContent value="flow-builder" className="flex-1 flex flex-col overflow-hidden p-4 md:p-8 pt-4 gap-4">
+                <div className="flex-1 relative overflow-hidden">
+                    <FlowCanvas 
+                        steps={steps} 
+                        onStepSelect={setSelectedStep} 
+                        selectedStepId={selectedStep?.id ?? null}
+                        onAddStep={handleAddStep}
+                        onDeleteStep={handleDeleteStep}
+                        onMoveStep={handleMoveStep}
+                        flowTitle={flowTitle}
+                        onTitleChange={handleTitleChange}
+                    />
+                    <PropertiesPanel 
+                        key={selectedStep?.id}
+                        selectedStep={selectedStep} 
+                        onClose={() => setSelectedStep(null)}
+                        onSave={handleUpdateStep}
+                    />
                 </div>
+                <RunMonitor logs={runLogs} isRunning={isRunning}/>
             </TabsContent>
             <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
               <InspectorPanel 
@@ -433,5 +431,3 @@ export default function MainDashboard() {
     </div>
   );
 }
-
-    
