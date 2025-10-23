@@ -26,11 +26,11 @@ const getStatusIcon = (status: Step['status']) => {
 }
 
 const getStatusClasses = (status: Step['status'], isSelected: boolean | undefined) => {
-    if (isSelected) return "border-primary ring-2 ring-primary";
+    if (isSelected) return "border-primary ring-2 ring-primary/50 shadow-primary/20";
     switch(status) {
-        case 'running': return "border-blue-500 ring-2 ring-blue-500/50";
-        case 'success': return "border-green-500";
-        case 'error': return "border-destructive";
+        case 'running': return "border-blue-500 ring-2 ring-blue-500/50 shadow-blue-500/20";
+        case 'success': return "border-green-500 ring-1 ring-green-500/50 shadow-green-500/10";
+        case 'error': return "border-destructive ring-1 ring-destructive/50 shadow-destructive/10";
         default: return "border-border/60 hover:border-primary";
     }
 }

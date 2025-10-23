@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
 import { Globe, Loader2 } from "lucide-react";
 import { NodePalette } from "../dashboard/node-palette";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export type Action = {
   id: number;
@@ -64,7 +63,7 @@ async function fetchUrlContentViaProxy(url: string): Promise<string> {
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
-  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85");
+  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85/backend/login");
   const [iframeContent, setIframeContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInspectorActive, setIsInspectorActive] = useState(false);
@@ -74,7 +73,6 @@ export default function MainDashboard() {
   const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
   const [activeTab, setActiveTab] = useState("flow-builder");
-  const [lastVisitedUrl, setLastVisitedUrl] = useState<string | null>(null);
 
 
   const handleAddStep = (type: string, target?: string) => {
@@ -164,35 +162,40 @@ export default function MainDashboard() {
         if (isRunning) return;
         setIsRunning(true);
         cleanupTimeouts();
-        setLastVisitedUrl(null);
 
         let currentStepIndex = 0;
         
+        // Reset all statuses to idle before a run
         setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
 
         const runNextStep = async () => {
             if (currentStepIndex >= steps.length) {
+                // All steps succeeded
+                setIsRunning(false);
                 const finalTimeout = setTimeout(() => {
-                    setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
-                    setIsRunning(false);
-                }, 1000);
+                    // Optional: Reset to idle after a delay
+                    // setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
+                }, 2000);
                 runTimeoutRef.current.push(finalTimeout);
                 return;
             }
 
             const currentStep = steps[currentStepIndex];
 
+            // Set current step to 'running'
             setSteps(prev => prev.map(s => s.id === currentStep.id ? {...s, status: 'running'} : s));
             
             // If it's a navigate step, load it in the inspector
             if (currentStep.type.toLowerCase() === 'navigate' && currentStep.actions[0]?.target) {
-                // Don't load in iframe, just update the visual confirmation
-                setLastVisitedUrl(currentStep.actions[0].target);
+                 await handleLoadInspector(currentStep.actions[0].target);
+                 setActiveTab('inspector');
             }
 
 
             const stepTimeout = setTimeout(() => {
+                // Simulate step success or failure
                 const isSuccess = Math.random() > 0.2; // 80% chance of success
+                
                 setSteps(prev => prev.map(s => {
                     if (s.id === currentStep.id) {
                         return {...s, status: isSuccess ? 'success' : 'error' };
@@ -204,13 +207,15 @@ export default function MainDashboard() {
                     currentStepIndex++;
                     runNextStep();
                 } else {
+                     // On failure, stop the run
+                     setIsRunning(false);
+                     // Optional: reset non-failed/succeeded steps to idle
                      const errorTimeout = setTimeout(() => {
-                        setSteps(prev => prev.map(s => (s.status !== 'success' && s.status !== 'error') ? {...s, status: 'idle'} : s));
-                        setIsRunning(false);
+                        // setSteps(prev => prev.map(s => (s.status === 'running') ? {...s, status: 'idle'} : s));
                      }, 1000);
                      runTimeoutRef.current.push(errorTimeout);
                 }
-            }, 1000); 
+            }, 1000 + Math.random() * 800); // Simulate network/execution time
             runTimeoutRef.current.push(stepTimeout);
         }
 
@@ -221,7 +226,7 @@ export default function MainDashboard() {
 
     const handleStopTest = () => {
         cleanupTimeouts();
-        setLastVisitedUrl(null);
+        // Reset any 'running' steps back to 'idle'
         setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
         setIsRunning(false);
     }
@@ -377,21 +382,6 @@ export default function MainDashboard() {
                             onTitleChange={handleTitleChange}
                         />
                     </div>
-                     {lastVisitedUrl && (
-                        <div className="flex-shrink-0">
-                            <Card>
-                                <CardHeader className="p-3">
-                                    <CardTitle className="text-sm flex items-center gap-2">
-                                        <Globe className="text-primary"/>
-                                        Last Visited URL
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-3 pt-0">
-                                    <p className="font-mono text-xs bg-muted p-2 rounded-md truncate">{lastVisitedUrl}</p>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
                     <PropertiesPanel 
                         key={selectedStep?.id}
                         selectedStep={selectedStep} 
@@ -438,6 +428,3 @@ export default function MainDashboard() {
     </div>
   );
 }
-
-
-    
