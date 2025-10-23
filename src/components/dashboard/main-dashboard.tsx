@@ -373,7 +373,7 @@ export default function MainDashboard() {
             </div>
             <TabsContent value="flow-builder" className="flex-1 overflow-hidden p-4 md:p-8 pt-4">
                 <div className="flex flex-col h-full gap-4">
-                    <div className="flex-1 overflow-hidden h-full relative">
+                    <div className="flex-1 h-full relative overflow-hidden">
                         <FlowCanvas 
                             steps={steps} 
                             onStepSelect={setSelectedStep} 

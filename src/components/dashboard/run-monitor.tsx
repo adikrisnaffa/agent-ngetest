@@ -36,19 +36,19 @@ const getStatusIcon = (status: LogEntry['status']) => {
 }
 
 export default function RunMonitor({ logs, isRunning }: { logs: LogEntry[], isRunning: boolean }) {
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        if (scrollAreaViewportRef.current) {
+            scrollAreaViewportRef.current.scrollTop = scrollAreaViewportRef.current.scrollHeight;
         }
     }, [logs]);
 
     return (
-        <div className="h-64 flex flex-col">
+        <div className="h-64 flex flex-col flex-shrink-0">
             <h3 className="text-lg font-semibold mb-2 px-1">Run Monitor</h3>
-            <Card className="flex-1 bg-black/80 p-4 border-t rounded-lg shadow-inner">
-                <ScrollArea className="h-full w-full" ref={scrollAreaRef}>
+            <Card className="flex-1 bg-black/80 p-4 border-t rounded-lg shadow-inner overflow-hidden">
+                <ScrollArea className="h-full w-full">
                     <div className="font-mono text-sm text-white/90 space-y-2 pr-4">
                         {logs.map((log, index) => (
                             <div key={index} className="flex items-start gap-3">
