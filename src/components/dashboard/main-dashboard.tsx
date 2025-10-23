@@ -168,15 +168,10 @@ export default function MainDashboard() {
         // Reset all statuses to idle before a run
         setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
 
-        const runNextStep = async () => {
+        const runNextStep = () => {
             if (currentStepIndex >= steps.length) {
                 // All steps succeeded
                 setIsRunning(false);
-                const finalTimeout = setTimeout(() => {
-                    // Optional: Reset to idle after a delay
-                    // setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
-                }, 2000);
-                runTimeoutRef.current.push(finalTimeout);
                 return;
             }
 
@@ -184,13 +179,6 @@ export default function MainDashboard() {
 
             // Set current step to 'running'
             setSteps(prev => prev.map(s => s.id === currentStep.id ? {...s, status: 'running'} : s));
-            
-            // If it's a navigate step, load it in the inspector
-            if (currentStep.type.toLowerCase() === 'navigate' && currentStep.actions[0]?.target) {
-                 await handleLoadInspector(currentStep.actions[0].target);
-                 setActiveTab('inspector');
-            }
-
 
             const stepTimeout = setTimeout(() => {
                 // Simulate step success or failure
@@ -209,11 +197,6 @@ export default function MainDashboard() {
                 } else {
                      // On failure, stop the run
                      setIsRunning(false);
-                     // Optional: reset non-failed/succeeded steps to idle
-                     const errorTimeout = setTimeout(() => {
-                        // setSteps(prev => prev.map(s => (s.status === 'running') ? {...s, status: 'idle'} : s));
-                     }, 1000);
-                     runTimeoutRef.current.push(errorTimeout);
                 }
             }, 1000 + Math.random() * 800); // Simulate network/execution time
             runTimeoutRef.current.push(stepTimeout);
@@ -244,8 +227,17 @@ export default function MainDashboard() {
     }
     setInspectorUrl(finalUrl);
 
-    const content = await fetchUrlContentViaProxy(finalUrl);
-    setIframeContent(content);
+    try {
+        const content = await fetchUrlContentViaProxy(finalUrl);
+        setIframeContent(content);
+    } catch (error) {
+        if (error instanceof Error) {
+            setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Error loading page</h1><p>${error.message}</p></div></html>`);
+        } else {
+            setIframeContent(`<html><body><h1>An unknown error occurred</h1></body></html>`);
+        }
+    }
+    
     setIsLoading(false);
   }
 
@@ -428,3 +420,5 @@ export default function MainDashboard() {
     </div>
   );
 }
+
+    
