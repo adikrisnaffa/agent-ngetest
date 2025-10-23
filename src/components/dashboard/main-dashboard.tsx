@@ -35,7 +35,7 @@ interface FlowDoc {
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
-  const [inspectorUrl, setInspectorUrl] = useState("https://www.google.com");
+  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85/backend/login");
   const [iframeContent, setIframeContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInspectorActive, setIsInspectorActive] = useState(false);
@@ -385,3 +385,5 @@ export default function MainDashboard() {
     </div>
   );
 }
+
+    
