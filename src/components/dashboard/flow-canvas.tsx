@@ -140,7 +140,7 @@ export default function FlowCanvas({ steps, onStepSelect, selectedStepId, onAddS
   }
   
   return (
-    <div className="space-y-6 h-full flex flex-col">
+    <div className="space-y-4 h-full flex flex-col">
       <div className="flex items-center justify-between flex-shrink-0">
         <FlowTitle title={flowTitle} onTitleChange={onTitleChange} />
       </div>

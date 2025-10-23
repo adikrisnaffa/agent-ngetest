@@ -9,6 +9,7 @@ import InspectorPanel from "./inspector-panel";
 import { Loader2 } from "lucide-react";
 import { fetchUrlContent } from "@/app/actions";
 import { NodePalette } from "../dashboard/node-palette";
+import RunMonitor from "./run-monitor";
 
 export type Action = {
   id: number;
@@ -31,6 +32,14 @@ interface FlowDoc {
   steps: Step[];
 }
 
+export type LogEntry = {
+    timestamp: string;
+    stepId?: number;
+    stepTitle?: string;
+    status: 'info' | 'success' | 'error' | 'running';
+    message: string;
+}
+
 
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>([]);
@@ -45,6 +54,15 @@ export default function MainDashboard() {
   const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
   const [activeTab, setActiveTab] = useState("flow-builder");
+  const [runLogs, setRunLogs] = useState<LogEntry[]>([]);
+
+  const addLog = (log: Omit<LogEntry, 'timestamp'>) => {
+    const newLog = {
+        ...log,
+        timestamp: new Date().toLocaleTimeString()
+    };
+    setRunLogs(prev => [...prev, newLog]);
+  }
 
   const handleAddStep = (type: string, target?: string) => {
     const newStep: Step = {
@@ -133,6 +151,9 @@ export default function MainDashboard() {
         if (isRunning) return;
         setIsRunning(true);
         cleanupTimeouts();
+        setRunLogs([]);
+        addLog({ status: 'info', message: `Starting flow: "${flowTitle}"...` });
+
 
         let currentStepIndex = 0;
         
@@ -140,6 +161,7 @@ export default function MainDashboard() {
 
         const runNextStep = () => {
             if (currentStepIndex >= steps.length) {
+                addLog({ status: 'success', message: 'Flow completed successfully.' });
                 const finalTimeout = setTimeout(() => {
                     setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
                     setIsRunning(false);
@@ -148,23 +170,43 @@ export default function MainDashboard() {
                 return;
             }
 
-            const currentStepId = steps[currentStepIndex].id;
+            const currentStep = steps[currentStepIndex];
 
-            setSteps(prev => prev.map(s => s.id === currentStepId ? {...s, status: 'running'} : s));
+            setSteps(prev => prev.map(s => s.id === currentStep.id ? {...s, status: 'running'} : s));
+            addLog({ 
+                status: 'running', 
+                stepId: currentStep.id, 
+                stepTitle: currentStep.title, 
+                message: `Executing step: "${currentStep.title}"` 
+            });
 
             const stepTimeout = setTimeout(() => {
                 const isSuccess = Math.random() > 0.2; // 80% chance of success
                 setSteps(prev => prev.map(s => {
-                    if (s.id === currentStepId) {
+                    if (s.id === currentStep.id) {
                         return {...s, status: isSuccess ? 'success' : 'error' };
                     }
                     return s;
                 }));
 
                 if(isSuccess) {
+                    addLog({ 
+                        status: 'success', 
+                        stepId: currentStep.id, 
+                        stepTitle: currentStep.title, 
+                        message: `Step PASSED`
+                    });
                     currentStepIndex++;
                     runNextStep();
                 } else {
+                     addLog({ 
+                        status: 'error', 
+                        stepId: currentStep.id, 
+                        stepTitle: currentStep.title, 
+                        message: `Step FAILED` 
+                     });
+                     addLog({ status: 'error', message: 'Flow terminated due to an error.' });
+
                      const errorTimeout = setTimeout(() => {
                         setSteps(prev => prev.map(s => (s.status !== 'success' && s.status !== 'error') ? {...s, status: 'idle'} : s));
                         setIsRunning(false);
@@ -184,6 +226,7 @@ export default function MainDashboard() {
         cleanupTimeouts();
         setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
         setIsRunning(false);
+        addLog({ status: 'info', message: 'Flow execution stopped by user.' });
     }
   
   const handleLoadInspector = async (url?: string) => {
@@ -312,6 +355,7 @@ export default function MainDashboard() {
     setSteps([]);
     setFlowTitle("Untitled Flow");
     setSelectedStep(null);
+    setRunLogs([]);
   };
 
   return (
@@ -328,24 +372,27 @@ export default function MainDashboard() {
               </TabsList>
             </div>
             <TabsContent value="flow-builder" className="flex-1 overflow-hidden p-4 md:p-8 pt-4">
-              <div className="flex-1 overflow-hidden h-full relative">
-                  <FlowCanvas 
-                      steps={steps} 
-                      onStepSelect={setSelectedStep} 
-                      selectedStepId={selectedStep?.id ?? null}
-                      onAddStep={handleAddStep}
-                      onDeleteStep={handleDeleteStep}
-                      onMoveStep={handleMoveStep}
-                      flowTitle={flowTitle}
-                      onTitleChange={handleTitleChange}
-                  />
-                  <PropertiesPanel 
-                      key={selectedStep?.id}
-                      selectedStep={selectedStep} 
-                      onClose={() => setSelectedStep(null)}
-                      onSave={handleUpdateStep}
-                  />
-              </div>
+                <div className="flex flex-col h-full gap-4">
+                    <div className="flex-1 overflow-hidden h-full relative">
+                        <FlowCanvas 
+                            steps={steps} 
+                            onStepSelect={setSelectedStep} 
+                            selectedStepId={selectedStep?.id ?? null}
+                            onAddStep={handleAddStep}
+                            onDeleteStep={handleDeleteStep}
+                            onMoveStep={handleMoveStep}
+                            flowTitle={flowTitle}
+                            onTitleChange={handleTitleChange}
+                        />
+                        <PropertiesPanel 
+                            key={selectedStep?.id}
+                            selectedStep={selectedStep} 
+                            onClose={() => setSelectedStep(null)}
+                            onSave={handleUpdateStep}
+                        />
+                    </div>
+                    <RunMonitor logs={runLogs} isRunning={isRunning}/>
+                </div>
             </TabsContent>
             <TabsContent value="inspector" className="flex-1 overflow-hidden p-4 md:p-8 pt-4 flex flex-col gap-4">
               <InspectorPanel 
