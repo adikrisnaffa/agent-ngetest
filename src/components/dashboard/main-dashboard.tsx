@@ -7,8 +7,9 @@ import PropertiesPanel from "./properties-panel";
 import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
-import { Loader2 } from "lucide-react";
+import { Globe, Loader2 } from "lucide-react";
 import { NodePalette } from "../dashboard/node-palette";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export type Action = {
   id: number;
@@ -35,7 +36,9 @@ async function fetchUrlContentViaProxy(url: string): Promise<string> {
     try {
         const response = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => null);
+            const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
+            throw new Error(errorMessage);
         }
         let html = await response.text();
         
@@ -51,7 +54,7 @@ async function fetchUrlContentViaProxy(url: string): Promise<string> {
     } catch (error) {
         console.error('Failed to fetch URL content via proxy:', error);
         if (error instanceof Error) {
-            return `<html><body><h1>Error fetching page</h1><p>${error.message}</p><p>Please ensure the target URL is correct and the server is running.</p></body></html>`;
+            return `<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Error fetching page</h1><p>URL: ${url}</p><p>Error: ${error.message}</p><p>This might be due to rate limiting (like status 429) or other security policies of the target website. Please try a different URL or check your network.</p></div></html>`;
         }
         return '<html><body><h1>An unknown error occurred</h1></body></html>';
     }
@@ -61,7 +64,7 @@ async function fetchUrlContentViaProxy(url: string): Promise<string> {
 export default function MainDashboard() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
-  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85/backend/login");
+  const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85");
   const [iframeContent, setIframeContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInspectorActive, setIsInspectorActive] = useState(false);
@@ -71,6 +74,8 @@ export default function MainDashboard() {
   const runTimeoutRef = useRef<NodeJS.Timeout[]>([]);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
   const [activeTab, setActiveTab] = useState("flow-builder");
+  const [lastVisitedUrl, setLastVisitedUrl] = useState<string | null>(null);
+
 
   const handleAddStep = (type: string, target?: string) => {
     const newStep: Step = {
@@ -159,6 +164,7 @@ export default function MainDashboard() {
         if (isRunning) return;
         setIsRunning(true);
         cleanupTimeouts();
+        setLastVisitedUrl(null);
 
         let currentStepIndex = 0;
         
@@ -180,8 +186,8 @@ export default function MainDashboard() {
             
             // If it's a navigate step, load it in the inspector
             if (currentStep.type.toLowerCase() === 'navigate' && currentStep.actions[0]?.target) {
-                setActiveTab("inspector");
-                await handleLoadInspector(currentStep.actions[0].target);
+                // Don't load in iframe, just update the visual confirmation
+                setLastVisitedUrl(currentStep.actions[0].target);
             }
 
 
@@ -215,6 +221,7 @@ export default function MainDashboard() {
 
     const handleStopTest = () => {
         cleanupTimeouts();
+        setLastVisitedUrl(null);
         setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
         setIsRunning(false);
     }
@@ -357,17 +364,34 @@ export default function MainDashboard() {
               </TabsList>
             </div>
             <TabsContent value="flow-builder" className="flex-1 overflow-y-auto p-4 md:p-8 pt-4">
-                <div className="h-full relative">
-                    <FlowCanvas 
-                        steps={steps} 
-                        onStepSelect={setSelectedStep} 
-                        selectedStepId={selectedStep?.id ?? null}
-                        onAddStep={handleAddStep}
-                        onDeleteStep={handleDeleteStep}
-                        onMoveStep={handleMoveStep}
-                        flowTitle={flowTitle}
-                        onTitleChange={handleTitleChange}
-                    />
+                <div className="h-full flex flex-col gap-4">
+                    <div className="flex-grow">
+                        <FlowCanvas 
+                            steps={steps} 
+                            onStepSelect={setSelectedStep} 
+                            selectedStepId={selectedStep?.id ?? null}
+                            onAddStep={handleAddStep}
+                            onDeleteStep={handleDeleteStep}
+                            onMoveStep={handleMoveStep}
+                            flowTitle={flowTitle}
+                            onTitleChange={handleTitleChange}
+                        />
+                    </div>
+                     {lastVisitedUrl && (
+                        <div className="flex-shrink-0">
+                            <Card>
+                                <CardHeader className="p-3">
+                                    <CardTitle className="text-sm flex items-center gap-2">
+                                        <Globe className="text-primary"/>
+                                        Last Visited URL
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                    <p className="font-mono text-xs bg-muted p-2 rounded-md truncate">{lastVisitedUrl}</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
                     <PropertiesPanel 
                         key={selectedStep?.id}
                         selectedStep={selectedStep} 
@@ -414,3 +438,6 @@ export default function MainDashboard() {
     </div>
   );
 }
+
+
+    
