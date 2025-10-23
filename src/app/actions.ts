@@ -2,7 +2,12 @@
 
 export async function fetchUrlContent(url: string): Promise<string> {
     try {
-        const response = await fetch(url, {
+        let finalUrl = url;
+        if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+            finalUrl = 'http://' + finalUrl;
+        }
+
+        const response = await fetch(finalUrl, {
             headers: {
                 // Mimic a browser user agent
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -16,7 +21,7 @@ export async function fetchUrlContent(url: string): Promise<string> {
         let html = await response.text();
 
         // Inject a <base> tag to correctly resolve relative URLs for assets (CSS, JS, images)
-        const baseTag = `<base href="${new URL(url).origin}" />`;
+        const baseTag = `<base href="${new URL(finalUrl).origin}" />`;
         if (html.includes('<head>')) {
             html = html.replace('<head>', `<head>${baseTag}`);
         } else {
