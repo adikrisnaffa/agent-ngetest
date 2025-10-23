@@ -152,8 +152,17 @@ export default function MainDashboard() {
             setSteps(prev => prev.map(s => s.id === currentStep.id ? {...s, status: 'running'} : s));
 
             const stepTimeout = setTimeout(() => {
-                // For 'Navigate' steps, always succeed. For others, simulate random success/failure.
-                const isSuccess = currentStep.type === 'Navigate' ? true : Math.random() > 0.2;
+                // Deterministic success/failure based on configuration
+                let isSuccess = false;
+                if (currentStep.type === 'Navigate') {
+                    isSuccess = true; // Navigate always succeeds in simulation
+                } else {
+                    // Succeeds if the target is not empty or the default placeholder
+                    const isConfigured = currentStep.actions.every(
+                        action => action.target && action.target.trim() !== '' && action.target.trim() !== 'your-selector'
+                    );
+                    isSuccess = isConfigured;
+                }
                 
                 setSteps(prev => prev.map(s => {
                     if (s.id === currentStep.id) {
@@ -169,7 +178,7 @@ export default function MainDashboard() {
                      // On failure, stop the run
                      setIsRunning(false);
                 }
-            }, 1000 + Math.random() * 800); // Simulate network/execution time
+            }, 750); // Simulate execution time
             runTimeoutRef.current.push(stepTimeout);
         }
 
@@ -193,7 +202,7 @@ export default function MainDashboard() {
     setIframeContent(null);
     
     // This is a simplified version that avoids the proxy for stability
-    setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Inspector Disabled for Direct Load</h1><p>Due to browser security policies, direct loading of external sites is restricted. Please test the URL in a separate browser tab.</p><p>URL: ${urlToLoad}</p></div></html>`);
+    setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Inspector Disabled</h1><p>Direct loading of external sites is restricted. Please test the URL in a separate browser tab and use the Inspector to get selectors from there.</p><p>URL: ${urlToLoad}</p></div></html>`);
     setIsLoading(false);
   }
 
