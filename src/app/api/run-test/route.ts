@@ -1,26 +1,32 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { chromium } from 'playwright';
 
 // This is a simplified function to handle different action types
-// We will expand this to be more robust
 const executeStep = async (page: any, step: any) => {
-  switch (step.type) {
-    case 'Navigate':
-      await page.goto(step.actions[0].target);
-      break;
-    case 'Click':
-      await page.click(step.actions[0].target);
-      break;
-    case 'Type':
-      await page.fill(step.actions[0].target, step.actions[0].value);
-      break;
-    case 'Assert':
-       // For now, we'll just check if the element is visible.
-       // We can make the assertion logic more complex later.
-      await page.waitForSelector(step.actions[0].target, { state: 'visible' });
-      break;
-    default:
-      throw new Error(`Unsupported step type: ${step.type}`);
+  // A step can have multiple actions, but for now we'll process them sequentially.
+  for (const action of step.actions) {
+    switch (action.type) {
+      case 'Navigate':
+        // For Navigate, the URL is in the 'value' property.
+        await page.goto(action.value);
+        break;
+      case 'Click':
+        // For Click, the selector is in the 'target' property.
+        await page.click(action.target);
+        break;
+      case 'Type':
+        // For Type, we use target selector and value to type.
+        await page.fill(action.target, action.value);
+        break;
+      case 'Assert':
+         // For Assert, we check if the element is visible.
+         // 'value' can be used for more complex assertions later.
+        await page.waitForSelector(action.target, { state: 'visible' });
+        break;
+      default:
+        throw new Error(`Unsupported action type: ${action.type}`);
+    }
   }
 };
 
