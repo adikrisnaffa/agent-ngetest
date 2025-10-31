@@ -1,7 +1,7 @@
 
 "use client";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { FileCode, ChevronDown, User, Play, Square, Loader2, LogOut } from "lucide-react";
+import { FileCode, ChevronDown, User, Play, Square, Loader2, LogOut, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,10 +18,12 @@ import { signOut } from "firebase/auth";
 interface HeaderProps {
     onRun: () => void;
     onStop: () => void;
+    onExport: () => void;
     isRunning: boolean;
+    isExporting: boolean;
 }
 
-export default function Header({ onRun, onStop, isRunning }: HeaderProps) {
+export default function Header({ onRun, onStop, onExport, isRunning, isExporting }: HeaderProps) {
   const { user, isUserLoading } = useUser();
   const { auth } = useAuth();
 
@@ -40,13 +42,17 @@ export default function Header({ onRun, onStop, isRunning }: HeaderProps) {
 
       <div className="flex flex-1 items-center justify-end gap-4">
         <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={onRun} disabled={isRunning}>
+            <Button variant="outline" onClick={onRun} disabled={isRunning || isExporting}>
                 {isRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Play className="mr-2 h-4 w-4" />}
                 Run
             </Button>
             <Button variant="outline" onClick={onStop} disabled={!isRunning}>
                 <Square className="mr-2 h-4 w-4" />
                 Stop
+            </Button>
+            <Button variant="secondary" onClick={onExport} disabled={isRunning || isExporting}>
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileDown className="mr-2 h-4 w-4" />}
+                Export to Excel
             </Button>
         </div>
         

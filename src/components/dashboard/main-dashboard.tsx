@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
 import { Globe, Loader2 } from "lucide-react";
 import { NodePalette } from "../dashboard/node-palette";
+import { useToast } from "@/hooks/use-toast";
 
 export type Action = {
   id: number;
@@ -41,8 +42,10 @@ export default function MainDashboard() {
   const [selectedElementSelector, setSelectedElementSelector] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [flowTitle, setFlowTitle] = useState("Untitled Flow");
   const [activeTab, setActiveTab] = useState("flow-builder");
+  const { toast } = useToast();
 
 
   const handleAddStep = (type: string, target?: string) => {
@@ -199,9 +202,65 @@ export default function MainDashboard() {
     setSelectedStep(null);
   };
 
+  const handleExportToExcel = async () => {
+    if (steps.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Cannot Export",
+        description: "Your flow is empty. Add some steps before exporting.",
+      });
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const response = await fetch('/api/generate-test-case', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: flowTitle, steps }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate Excel file.');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Sanitize title for filename
+      const fileName = `${flowTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_test_case.xlsx`;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: `Test case '${fileName}' has been downloaded.`,
+      });
+
+    } catch (error: any) {
+      console.error("Export failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: error.message || "Could not generate the Excel file.",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
-      <Header onRun={handleRunTest} onStop={handleStopTest} isRunning={isRunning} />
+      <Header 
+        onRun={handleRunTest} 
+        onStop={handleStopTest} 
+        onExport={handleExportToExcel}
+        isRunning={isRunning}
+        isExporting={isExporting}
+      />
       <div className="flex flex-1 overflow-hidden">
         <NodePalette onAddNode={handleAddStep} onCreateFlow={handleCreateNewFlow} />
         <main className="flex-1 overflow-hidden">
