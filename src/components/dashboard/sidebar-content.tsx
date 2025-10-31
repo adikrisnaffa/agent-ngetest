@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Bot, LifeBuoy, Settings, KeyRound, Workflow, ScanLine, FolderGit2, TestTube, ChevronsRight, AreaChart } from "lucide-react";
+import { Bot, Settings, KeyRound, Workflow, ScanLine, FolderGit2, TestTube, ChevronsRight, AreaChart } from "lucide-react";
 
 interface SidebarContentProps {
   activeView: string;
@@ -54,17 +54,9 @@ export default function SidebarContent({ activeView, setActiveView }: SidebarCon
           ))}
         </SidebarMenu>
       </SidebarBody>
-      <SidebarFooter className="mt-auto border-t p-2">
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Help & Support">
-                    <LifeBuoy className="h-5 w-5" />
-                    <span>Help & Support</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-        </SidebarMenu>
-         <div className="text-center text-xs text-muted-foreground p-2 group-data-[collapsible=icon]:hidden">
-            (c) Tukang Ngetest {new Date().getFullYear()}
+      <SidebarFooter className="mt-auto border-t p-4">
+         <div className="text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+            © Tukang Ngetest {new Date().getFullYear()}
         </div>
       </SidebarFooter>
     </div>
