@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Bot, LifeBuoy, Settings, KeyRound, Workflow, ScanLine, FolderGit2, TestTube, ChevronsRight } from "lucide-react";
+import { Bot, LifeBuoy, Settings, KeyRound, Workflow, ScanLine, FolderGit2, TestTube, ChevronsRight, AreaChart } from "lucide-react";
 
 interface SidebarContentProps {
   activeView: string;
@@ -22,6 +22,7 @@ export default function SidebarContent({ activeView, setActiveView }: SidebarCon
     { name: "Scan Config", icon: ScanLine },
     { name: "Repository", icon: FolderGit2 },
     { name: "Test Settings", icon: TestTube },
+    { name: "Reporting", icon: AreaChart },
   ];
 
   return (

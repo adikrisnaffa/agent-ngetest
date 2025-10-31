@@ -7,6 +7,7 @@ import AuthenticationView from "@/components/dashboard/authentication-view";
 import ScanConfigView from "@/components/dashboard/scan-config-view";
 import TestSettingsView from "@/components/dashboard/test-settings-view";
 import RepositoryView from "@/components/dashboard/repository-view";
+import ReportingView from "@/components/dashboard/reporting-view";
 
 // Placeholder component for other views
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -34,6 +35,8 @@ export default function Home() {
         return <TestSettingsView />;
       case "Repository":
         return <RepositoryView />;
+      case "Reporting":
+        return <ReportingView />;
       case "Configuration":
         return <PlaceholderView title={activeView} />;
       default:
