@@ -6,35 +6,32 @@
       "type": "object",
       "description": "Represents a project within the Automation Aent application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Project entity."
-        },
         "name": {
           "type": "string",
           "description": "The name of the project."
         },
-        "description": {
+        "status": {
           "type": "string",
-          "description": "A detailed description of the project."
+          "description": "The current status of the project.",
+          "enum": [
+            "Development",
+            "Ready for Testing",
+            "Bug",
+            "Testing",
+            "Ready to Prod",
+            "Deploy"
+          ]
         },
         "createdAt": {
           "type": "string",
           "description": "The timestamp indicating when the project was created.",
           "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "The timestamp indicating when the project was last updated.",
-          "format": "date-time"
         }
       },
       "required": [
-        "id",
         "name",
-        "description",
-        "createdAt",
-        "updatedAt"
+        "status",
+        "createdAt"
       ]
     },
     "ObjectRepository": {
@@ -298,3 +295,4 @@
     "reasoning": "The Firestore data structure is designed to support the core features of the Automation Aent application, focusing on object repository building, end-to-end flow design, and automated test case generation. The structure prioritizes authorization independence and simplifies security rules using denormalization. It leverages path-based ownership where applicable.\n\n**Authorization Independence:** Authorization is enforced independently at each level by structuring data in hierarchical paths based on ownership and by including necessary ownership or membership data directly within subcollection documents. This avoids `get()` calls in security rules.\n\n**QAPs (Rules are not Filters):** The data structure supports secure `list` operations by segregating data with different access requirements into distinct collections. For instance, projects are under `/users/{userId}/projects/{projectId}` ensuring only the project owner or members can list projects they have access to.\n\n**Structure Overview:**\n\n*   **`/users/{userId}/projects/{projectId}`**: Projects are nested under user documents. This structure enables simple rules based on the user ID.  All project related data (object repositories, flows, test cases) are stored as subcollections for clear ownership and access control.\n*   **`/users/{userId}/projects/{projectId}/objectRepositories/{objectRepositoryId}`**: Object repositories are subcollections of projects. This allows easy listing of object repositories belonging to a specific project and enforces project-level authorization.\n*   **`/users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}`**: End-to-end flows are stored as subcollections of projects, enabling simple listing and authorization based on project membership.\n*   **`/users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId}`**: Test cases are nested under their respective end-to-end flows. This structure maintains a clear relationship between flows and their generated test cases."
   }
 }
+    

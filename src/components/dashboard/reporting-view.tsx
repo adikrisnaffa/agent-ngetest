@@ -1,13 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
+import { collection, doc, serverTimestamp } from "firebase/firestore";
+import {
+    useCollection,
+    useFirebase,
+    useUser,
+    addDocumentNonBlocking,
+    updateDocumentNonBlocking,
+    deleteDocumentNonBlocking,
+    useMemoFirebase,
+    type WithId
+} from "@/firebase";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Plus, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -16,20 +28,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 type Status = "Development" | "Ready for Testing" | "Bug" | "Testing" | "Ready to Prod" | "Deploy";
 
 interface Project {
-    id: number;
     name: string;
     status: Status;
+    createdAt: any; // Firestore timestamp
 }
 
-const initialProjects: Project[] = [
-    { id: 1, name: "Project Alpha - E-commerce Checkout", status: "Ready for Testing" },
-    { id: 2, name: "Project Bravo - User Authentication", status: "Deploy" },
-    { id: 3, name: "Project Charlie - API Integration", status: "Bug" },
-    { id: 4, name: "Project Delta - Reporting Dashboard", status: "Development" },
-    { id: 5, name: "Project Echo - Mobile App Refactor", status: "Testing" },
-    { id: 6, name: "Project Foxtrot - New Landing Page", status: "Ready to Prod" },
-    { id: 7, name: "Project Golf - Database Migration", status: "Development" },
-];
+type ProjectWithId = WithId<Project>;
 
 const ALL_STATUSES: Status[] = ["Development", "Ready for Testing", "Bug", "Testing", "Ready to Prod", "Deploy"];
 
@@ -53,7 +57,7 @@ function ProjectFormDialog({
 }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    project: Omit<Project, 'status' | 'id'> & { id?: number } | null;
+    project: Omit<Project, 'status' | 'createdAt' | 'id'> & { id?: string } | null;
     onSave: (name: string) => void;
 }) {
     const [name, setName] = useState("");
@@ -97,13 +101,21 @@ function ProjectFormDialog({
     );
 }
 
-
 export default function ReportingView() {
-    const [projects, setProjects] = useState<Project[]>(initialProjects);
+    const { user, isUserLoading } = useUser();
+    const { firestore } = useFirebase();
+    
+    const projectsCollectionRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return collection(firestore, `users/${user.uid}/projects`);
+    }, [user, firestore]);
+    
+    const { data: projects, isLoading: areProjectsLoading } = useCollection<Project>(projectsCollectionRef);
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [editingProject, setEditingProject] = useState<ProjectWithId | null>(null);
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [projectToDelete, setProjectToDelete] = useState<ProjectWithId | null>(null);
 
 
     const handleAddProject = () => {
@@ -111,40 +123,85 @@ export default function ReportingView() {
         setIsDialogOpen(true);
     };
 
-    const handleEditProject = (project: Project) => {
+    const handleEditProject = (project: ProjectWithId) => {
         setEditingProject(project);
         setIsDialogOpen(true);
     };
 
-    const confirmDeleteProject = (project: Project) => {
+    const confirmDeleteProject = (project: ProjectWithId) => {
         setProjectToDelete(project);
         setIsDeleteAlertOpen(true);
     };
 
     const handleDeleteProject = () => {
-        if (projectToDelete) {
-            setProjects(projects.filter(p => p.id !== projectToDelete.id));
+        if (projectToDelete && projectsCollectionRef) {
+            const projectDocRef = doc(projectsCollectionRef, projectToDelete.id);
+            deleteDocumentNonBlocking(projectDocRef);
             setProjectToDelete(null);
         }
-         setIsDeleteAlertOpen(false);
+        setIsDeleteAlertOpen(false);
     };
 
     const handleSaveProject = (name: string) => {
+        if (!projectsCollectionRef) return;
+
         if (editingProject) {
-            setProjects(projects.map(p => p.id === editingProject.id ? { ...p, name } : p));
+            const projectDocRef = doc(projectsCollectionRef, editingProject.id);
+            updateDocumentNonBlocking(projectDocRef, { name });
         } else {
             const newProject: Project = {
-                id: projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1,
                 name,
                 status: "Development",
+                createdAt: serverTimestamp(),
             };
-            setProjects([...projects, newProject]);
+            addDocumentNonBlocking(projectsCollectionRef, newProject);
         }
     };
 
-    const handleStatusChange = (projectId: number, newStatus: Status) => {
-        setProjects(projects.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
+    const handleStatusChange = (projectId: string, newStatus: Status) => {
+        if (projectsCollectionRef) {
+            const projectDocRef = doc(projectsCollectionRef, projectId);
+            updateDocumentNonBlocking(projectDocRef, { status: newStatus });
+        }
     };
+    
+    const sortedProjects = React.useMemo(() => {
+        if (!projects) return [];
+        return [...projects].sort((a, b) => a.id.localeCompare(b.id));
+    }, [projects]);
+
+    const getProjectNumericId = (id: string, index: number) => {
+        // Fallback for older data that might not have a numeric prefix
+        return (index + 1).toString().padStart(3, '0');
+    }
+
+    if (isUserLoading) {
+         return (
+            <div className="flex h-full w-full items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+    
+    if (!user) {
+        return (
+             <div className="p-4 md:p-8 h-full overflow-auto">
+                <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-0 -mx-4 md:-mx-0 mb-4">
+                    <h1 className="text-xl font-semibold tracking-wider">Reporting</h1>
+                </header>
+                <div className="max-w-6xl mx-auto text-center">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Access Denied</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <p>You must be logged in to view and manage projects.</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="p-4 md:p-8 h-full overflow-auto">
@@ -174,9 +231,16 @@ export default function ReportingView() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {projects.map((project) => (
+                                {areProjectsLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center">
+                                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : sortedProjects.length > 0 ? (
+                                    sortedProjects.map((project, index) => (
                                     <TableRow key={project.id}>
-                                        <TableCell className="font-medium text-muted-foreground">PROJ-{project.id.toString().padStart(3, '0')}</TableCell>
+                                        <TableCell className="font-medium text-muted-foreground">PROJ-{getProjectNumericId(project.id, index)}</TableCell>
                                         <TableCell className="font-semibold">{project.name}</TableCell>
                                         <TableCell className="text-center">
                                             <DropdownMenu>
@@ -215,7 +279,13 @@ export default function ReportingView() {
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ))) : (
+                                     <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                            No projects found. Click "Add Project" to get started.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -232,7 +302,7 @@ export default function ReportingView() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the project from the list.
+                            This action cannot be undone. This will permanently delete the project from your database.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -244,3 +314,5 @@ export default function ReportingView() {
         </div>
     );
 }
+
+    
