@@ -4,18 +4,21 @@
 import Header from "@/components/layout/header";
 import FlowCanvas from "@/components/dashboard/flow-canvas";
 import PropertiesPanel from "./properties-panel";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
-import { Globe, Loader2 } from "lucide-react";
+import { Globe, Loader2, FileSearch, ArrowLeft } from "lucide-react";
 import { NodePalette } from "../dashboard/node-palette";
 import { useToast } from "@/hooks/use-toast";
+import { useUser, useFirebase, useDoc, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
+import { doc, collection } from "firebase/firestore";
+import { debounce } from 'lodash';
 
 export type Action = {
   id: number;
-  type: string; // e.g., Navigate, Type, Click, Assert
-  target: string; // CSS selector or URL
-  value: string; // Text to type or value to assert
+  type: string;
+  target: string;
+  value: string;
 };
 
 export type Step = {
@@ -26,14 +29,27 @@ export type Step = {
   status: 'idle' | 'running' | 'success' | 'error';
 }
 
-// Represent the structure of a flow document in Firestore
 interface FlowDoc {
-  title: string;
+  id: string;
+  name: string;
+  description?: string;
   steps: Step[];
 }
 
-export default function MainDashboard() {
+interface MainDashboardProps {
+  selectedProject: { id: string; name: string } | null;
+  onBackToProjects: () => void;
+}
+
+export default function MainDashboard({ selectedProject, onBackToProjects }: MainDashboardProps) {
+  const { user } = useUser();
+  const { firestore } = useFirebase();
+  const { toast } = useToast();
+  
   const [steps, setSteps] = useState<Step[]>([]);
+  const [flowTitle, setFlowTitle] = useState("Untitled Flow");
+  const [flowId, setFlowId] = useState<string | null>(null);
+
   const [selectedStep, setSelectedStep] = useState<Step | null>(null);
   const [inspectorUrl, setInspectorUrl] = useState("http://172.16.0.102:85/backend/login");
   const [iframeContent, setIframeContent] = useState<string | null>(null);
@@ -43,9 +59,50 @@ export default function MainDashboard() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [flowTitle, setFlowTitle] = useState("Untitled Flow");
   const [activeTab, setActiveTab] = useState("flow-builder");
-  const { toast } = useToast();
+
+  // This will be the single flow for a given project for now.
+  const flowDocRef = useMemoFirebase(() => {
+    if (!user || !firestore || !selectedProject) return null;
+    // We'll use a consistent ID for the flow doc per project for simplicity
+    const deterministicFlowId = `flow_for_${selectedProject.id}`;
+    return doc(firestore, `users/${user.uid}/projects/${selectedProject.id}/endToEndFlows`, deterministicFlowId);
+  }, [user, firestore, selectedProject]);
+
+  const { data: flowDoc, isLoading: isFlowLoading } = useDoc<FlowDoc>(flowDocRef);
+
+  const debouncedUpdate = useCallback(
+    debounce((flowData: Partial<FlowDoc>) => {
+      if (flowDocRef) {
+        updateDocumentNonBlocking(flowDocRef, flowData);
+      }
+    }, 1000), // Debounce updates by 1 second
+    [flowDocRef]
+  );
+  
+  useEffect(() => {
+    if (flowDoc) {
+      setSteps(flowDoc.steps || []);
+      setFlowTitle(flowDoc.name || `Flow for ${selectedProject?.name}`);
+      setFlowId(flowDoc.id);
+    } else if (selectedProject) {
+      // If no flow doc exists, initialize with default state
+      const newTitle = `Flow for ${selectedProject.name}`;
+      setFlowTitle(newTitle);
+      setSteps([]);
+      // Create the document if it doesn't exist.
+      if (flowDocRef) {
+         updateDocumentNonBlocking(flowDocRef, { name: newTitle, steps: [] });
+      }
+    }
+  }, [flowDoc, selectedProject, flowDocRef]);
+  
+  useEffect(() => {
+    // When title or steps change, trigger a debounced update to Firestore
+    if (!isFlowLoading && flowDocRef) {
+      debouncedUpdate({ name: flowTitle, steps: steps });
+    }
+  }, [flowTitle, steps, isFlowLoading, debouncedUpdate, flowDocRef]);
 
 
   const handleAddStep = (type: string, target?: string) => {
@@ -63,7 +120,6 @@ export default function MainDashboard() {
   const handleCreateStepFromInspector = (selector: string) => {
     if (!selector) return;
 
-    // Simple logic to guess the action type
     let actionType = 'Click';
     const lowerSelector = selector.toLowerCase();
     const isInput = lowerSelector.includes('input') || lowerSelector.includes('textarea') || lowerSelector.match(/\[contenteditable\s*=\s*['"]?true['"]?\]/);
@@ -84,8 +140,8 @@ export default function MainDashboard() {
 
     setSteps(prevSteps => [...prevSteps, newStep]);
     setSelectedStep(newStep);
-    setSelectedElementSelector(''); // Clear selector after creating step
-    setActiveTab("flow-builder"); // Switch back to the flow builder
+    setSelectedElementSelector('');
+    setActiveTab("flow-builder");
   };
 
   const handleUpdateStep = (updatedStep: Step) => {
@@ -109,7 +165,7 @@ export default function MainDashboard() {
 
         const remainingSteps = prevSteps.filter(step => step.id !== draggedId);
         
-        if (targetId === 0) { // Dropped at the very beginning
+        if (targetId === 0) {
             return [draggedStep, ...remainingSteps];
         }
 
@@ -129,7 +185,6 @@ export default function MainDashboard() {
     const handleRunTest = async () => {
       if (isRunning) return;
       setIsRunning(true);
-      // Reset all statuses to idle
       setSteps(prev => prev.map(s => ({...s, status: 'idle'})));
 
       try {
@@ -142,7 +197,8 @@ export default function MainDashboard() {
         });
 
         if (!response.ok) {
-          throw new Error('Test execution failed on the server.');
+          const errorResult = await response.json();
+          throw new Error(errorResult.details || 'Test execution failed on the server.');
         }
 
         const { results } = await response.json();
@@ -150,13 +206,17 @@ export default function MainDashboard() {
         for (const result of results) {
             setSteps(prev => prev.map(s => s.id === result.stepId ? {...s, status: result.status } : s));
             if (result.status === 'error') {
-              break; // Stop updating statuses on first error
+              break; 
             }
         }
 
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to run test:", error);
-        // Optionally, show a toast notification for the error
+        toast({
+            variant: "destructive",
+            title: "Test Run Failed",
+            description: error.message,
+        });
       } finally {
         setIsRunning(false);
       }
@@ -164,26 +224,22 @@ export default function MainDashboard() {
 
 
     const handleStopTest = () => {
-        // With a real backend, stopping a test is more complex.
-        // For now, this just resets the UI state.
         setIsRunning(false);
         setSteps(prev => prev.map(s => s.status === 'running' ? {...s, status: 'idle'} : s));
     }
   
   const handleLoadInspector = async (url?: string) => {
-    // This functionality is disabled as it's not reliable.
     const urlToLoad = url || inspectorUrl;
     setIsLoading(true);
     setIframeContent(`<html><body><div style="font-family: sans-serif; padding: 2rem;"><h1>Inspector Disabled</h1><p>This feature is currently disabled due to technical limitations in reliably fetching external content.</p><p>URL: ${urlToLoad}</p></div></html>`);
     setIsLoading(false);
   }
 
-  // Handle messaging from iframe
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'element-selected') {
         setSelectedElementSelector(event.data.selector);
-        setIsInspectorActive(false); // Turn off inspector mode after selection
+        setIsInspectorActive(false);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -195,12 +251,6 @@ export default function MainDashboard() {
   const handleTitleChange = (newTitle: string) => {
     setFlowTitle(newTitle);
   }
-
-  const handleCreateNewFlow = () => {
-    setSteps([]);
-    setFlowTitle("Untitled Flow");
-    setSelectedStep(null);
-  };
 
   const handleExportToExcel = async () => {
     if (steps.length === 0) {
@@ -227,7 +277,6 @@ export default function MainDashboard() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      // Sanitize title for filename
       const fileName = `${flowTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_test_case.xlsx`;
       a.download = fileName;
       document.body.appendChild(a);
@@ -252,6 +301,30 @@ export default function MainDashboard() {
     }
   };
 
+  if (!selectedProject) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center p-8 text-center bg-background">
+        <FileSearch className="h-16 w-16 text-muted-foreground/50 mb-4" />
+        <h2 className="text-2xl font-bold">Select a Project</h2>
+        <p className="text-muted-foreground max-w-md mt-2">
+          To start building a flow, please go to the 'Reporting' section and select a project, or create a new one.
+        </p>
+         <Button onClick={() => onBackToProjects()} className="mt-6">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Go to Projects
+        </Button>
+      </div>
+    )
+  }
+  
+  if (isFlowLoading) {
+    return (
+        <div className="flex h-full w-full items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="ml-4 text-muted-foreground">Loading flow...</p>
+        </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <Header 
@@ -262,14 +335,18 @@ export default function MainDashboard() {
         isExporting={isExporting}
       />
       <div className="flex flex-1 overflow-hidden">
-        <NodePalette onAddNode={handleAddStep} onCreateFlow={handleCreateNewFlow} />
+        <NodePalette onAddNode={handleAddStep} />
         <main className="flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="p-4 md:px-8 md:pt-8 md:pb-0">
+            <div className="p-4 md:px-8 md:pt-8 md:pb-0 flex justify-between items-center">
               <TabsList>
                 <TabsTrigger value="flow-builder">Flow Builder</TabsTrigger>
                 <TabsTrigger value="inspector">Inspector</TabsTrigger>
               </TabsList>
+               <Button variant="ghost" onClick={onBackToProjects}>
+                    <ArrowLeft className="mr-2 h-4 w-4"/>
+                    Back to Projects
+                </Button>
             </div>
             <TabsContent value="flow-builder" className="flex-1 overflow-y-auto p-4 md:p-8 pt-4">
                 <div className="h-full flex flex-col gap-4">

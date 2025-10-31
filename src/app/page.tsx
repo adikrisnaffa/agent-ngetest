@@ -1,3 +1,4 @@
+
 "use client";
 import { useState } from "react";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
@@ -22,11 +23,25 @@ const PlaceholderView = ({ title }: { title: string }) => (
 
 export default function Home() {
   const [activeView, setActiveView] = useState("Flow Builder");
+  const [activeProject, setActiveProject] = useState<{ id: string, name: string } | null>(null);
+
+  const handleProjectSelect = (project: { id: string, name: string }) => {
+    setActiveProject(project);
+    setActiveView("Flow Builder");
+  };
+
+  const handleBackToProjects = () => {
+    setActiveProject(null);
+    setActiveView("Reporting");
+  }
 
   const renderContent = () => {
     switch(activeView) {
       case "Flow Builder":
-        return <MainDashboard />;
+        return <MainDashboard 
+                  selectedProject={activeProject} 
+                  onBackToProjects={handleBackToProjects} 
+               />;
       case "Authentication":
         return <AuthenticationView />;
       case "Scan Config":
@@ -36,11 +51,11 @@ export default function Home() {
       case "Repository":
         return <RepositoryView />;
       case "Reporting":
-        return <ReportingView />;
+        return <ReportingView onProjectSelect={handleProjectSelect} />;
       case "Configuration":
         return <PlaceholderView title={activeView} />;
       default:
-        return <MainDashboard />;
+        return <MainDashboard selectedProject={activeProject} onBackToProjects={handleBackToProjects} />;
     }
   }
 

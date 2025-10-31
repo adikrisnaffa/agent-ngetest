@@ -1,3 +1,4 @@
+
 "use client";
 
 import ActionCard from "./action-card";
@@ -8,10 +9,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 interface NodePaletteProps {
   onAddNode: (type: string) => void;
-  onCreateFlow: () => void;
 }
 
-export function NodePalette({ onAddNode, onCreateFlow }: NodePaletteProps) {
+export function NodePalette({ onAddNode }: NodePaletteProps) {
   const actions = [
     { name: "Click", icon: MousePointerClick, description: "Click an element" },
     { name: "Type", icon: Type, description: "Type some text" },
@@ -26,10 +26,6 @@ export function NodePalette({ onAddNode, onCreateFlow }: NodePaletteProps) {
           <h2 className="text-lg font-semibold">Node Palette</h2>
         </header>
         <div className="p-4 space-y-4">
-            <Button className="w-full" onClick={onCreateFlow}>
-                <FilePlus className="mr-2 h-4 w-4" />
-                Create Flow
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" className="w-full">

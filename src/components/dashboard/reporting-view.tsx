@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -101,7 +102,11 @@ function ProjectFormDialog({
     );
 }
 
-export default function ReportingView() {
+interface ReportingViewProps {
+    onProjectSelect: (project: { id: string, name: string }) => void;
+}
+
+export default function ReportingView({ onProjectSelect }: ReportingViewProps) {
     const { user, isUserLoading } = useUser();
     const { firestore } = useFirebase();
     
@@ -134,8 +139,8 @@ export default function ReportingView() {
     };
 
     const handleDeleteProject = () => {
-        if (projectToDelete && projectsCollectionRef) {
-            const projectDocRef = doc(projectsCollectionRef, projectToDelete.id);
+        if (projectToDelete && user && firestore) {
+            const projectDocRef = doc(firestore, `users/${user.uid}/projects/${projectToDelete.id}`);
             deleteDocumentNonBlocking(projectDocRef);
             setProjectToDelete(null);
         }
@@ -143,10 +148,12 @@ export default function ReportingView() {
     };
 
     const handleSaveProject = (name: string) => {
-        if (!projectsCollectionRef) return;
+        if (!user || !firestore) return;
+        
+        const projectsColRef = collection(firestore, `users/${user.uid}/projects`);
 
         if (editingProject) {
-            const projectDocRef = doc(projectsCollectionRef, editingProject.id);
+            const projectDocRef = doc(projectsColRef, editingProject.id);
             updateDocumentNonBlocking(projectDocRef, { name });
         } else {
             const newProject: Project = {
@@ -154,25 +161,24 @@ export default function ReportingView() {
                 status: "Development",
                 createdAt: serverTimestamp(),
             };
-            addDocumentNonBlocking(projectsCollectionRef, newProject);
+            addDocumentNonBlocking(projectsColRef, newProject);
         }
     };
 
     const handleStatusChange = (projectId: string, newStatus: Status) => {
-        if (projectsCollectionRef) {
-            const projectDocRef = doc(projectsCollectionRef, projectId);
+        if (user && firestore) {
+            const projectDocRef = doc(firestore, `users/${user.uid}/projects`, projectId);
             updateDocumentNonBlocking(projectDocRef, { status: newStatus });
         }
     };
     
     const sortedProjects = React.useMemo(() => {
         if (!projects) return [];
-        return [...projects].sort((a, b) => a.createdAt?.seconds - b.createdAt?.seconds);
+        return [...projects].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     }, [projects]);
 
     const getProjectNumericId = (project: ProjectWithId, index: number) => {
-        // Fallback for older data that might not have a numeric prefix
-        return (index + 1).toString().padStart(3, '0');
+        return (sortedProjects.length - index).toString().padStart(3, '0');
     }
 
     if (isUserLoading) {
@@ -206,14 +212,14 @@ export default function ReportingView() {
     return (
         <div className="p-4 md:p-8 h-full overflow-auto">
              <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-0 -mx-4 md:-mx-0 mb-4">
-                <h1 className="text-xl font-semibold tracking-wider">Reporting</h1>
+                <h1 className="text-xl font-semibold tracking-wider">Projects</h1>
             </header>
             <div className="max-w-6xl mx-auto">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>Project Status Overview</CardTitle>
-                            <CardDescription>Track the current status of all ongoing test automation projects.</CardDescription>
+                            <CardDescription>Track and manage your test automation projects.</CardDescription>
                         </div>
                         <Button onClick={handleAddProject}>
                             <Plus className="mr-2"/>
@@ -241,7 +247,11 @@ export default function ReportingView() {
                                     sortedProjects.map((project, index) => (
                                     <TableRow key={project.id}>
                                         <TableCell className="font-medium text-muted-foreground">PROJ-{getProjectNumericId(project, index)}</TableCell>
-                                        <TableCell className="font-semibold">{project.name}</TableCell>
+                                        <TableCell>
+                                            <a href="#" onClick={(e) => { e.preventDefault(); onProjectSelect(project); }} className="font-semibold hover:underline">
+                                                {project.name}
+                                            </a>
+                                        </TableCell>
                                         <TableCell className="text-center">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -302,7 +312,7 @@ export default function ReportingView() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the project from your database.
+                            This action cannot be undone. This will permanently delete the project and all its associated flows.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
