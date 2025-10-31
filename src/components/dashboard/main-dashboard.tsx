@@ -12,8 +12,7 @@ import { Button } from "@/components/ui/button";
 import { NodePalette } from "../dashboard/node-palette";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirebase, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
-import { debounce } from 'lodash';
+import { doc } from "firebase/firestore";
 
 export type Action = {
   id: number;
@@ -72,16 +71,7 @@ export default function MainDashboard({ selectedProject, onBackToProjects }: Mai
 
   const { data: flowDoc, isLoading: isFlowLoading } = useDoc<FlowDoc>(flowDocRef);
 
-  const debouncedUpdate = useCallback(
-    debounce((flowData: Partial<FlowDoc>) => {
-      if (flowDocRef) {
-        // Use setDoc with merge to create or update
-        setDocumentNonBlocking(flowDocRef, flowData, { merge: true });
-      }
-    }, 1000), // Debounce updates by 1 second
-    [flowDocRef]
-  );
-  
+  // Effect to load data from Firestore or initialize a new flow
   useEffect(() => {
     if (flowDoc) {
       setSteps(flowDoc.steps || []);
@@ -90,24 +80,37 @@ export default function MainDashboard({ selectedProject, onBackToProjects }: Mai
     } else if (!isFlowLoading && selectedProject) {
       // If no flow doc exists and we are not loading, initialize with default state
       const newTitle = `Flow for ${selectedProject.name}`;
+      const initialSteps: Step[] = [];
       setFlowTitle(newTitle);
-      setSteps([]);
-      // Create the document if it doesn't exist.
+      setSteps(initialSteps);
+      // Immediately save this new flow to Firestore
       if (flowDocRef) {
-         setDocumentNonBlocking(flowDocRef, { name: newTitle, steps: [] }, { merge: true });
+         setDocumentNonBlocking(flowDocRef, { name: newTitle, steps: initialSteps }, { merge: true });
       }
     }
   }, [flowDoc, isFlowLoading, selectedProject, flowDocRef]);
   
+  // Effect to save changes to Firestore
   useEffect(() => {
-    // When title or steps change, trigger a debounced update to Firestore
-    if (!isFlowLoading && flowDocRef) {
-      // Don't save if it's the initial default state before a doc is loaded
-      if (flowDoc || (flowTitle !== "Untitled Flow" && selectedProject)) {
-        debouncedUpdate({ name: flowTitle, steps: steps });
-      }
+    // Prevent saving on initial load before flowDoc is fetched
+    if (isFlowLoading || !flowDocRef || !selectedProject) {
+      return;
     }
-  }, [flowTitle, steps, isFlowLoading, debouncedUpdate, flowDocRef, flowDoc, selectedProject]);
+
+    // Prevent saving if the local state is still the default/unitialized state
+    // and the document doesn't exist yet. The creation is handled in the loading effect.
+    if (!flowDoc && flowTitle === 'Untitled Flow') {
+        return;
+    }
+    
+    // Only save if data has actually changed from what's in Firestore
+    if (flowDoc && flowDoc.name === flowTitle && JSON.stringify(flowDoc.steps) === JSON.stringify(steps)) {
+      return;
+    }
+    
+    setDocumentNonBlocking(flowDocRef, { name: flowTitle, steps: steps }, { merge: true });
+
+  }, [flowTitle, steps, flowDocRef, isFlowLoading, flowDoc, selectedProject]);
 
 
   const handleAddStep = (type: string, target?: string) => {
