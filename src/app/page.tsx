@@ -22,7 +22,7 @@ const PlaceholderView = ({ title }: { title: string }) => (
 
 
 export default function Home() {
-  const [activeView, setActiveView] = useState("Flow Builder");
+  const [activeView, setActiveView] = useState("Authentication");
   const [activeProject, setActiveProject] = useState<{ id: string, name: string } | null>(null);
 
   const handleProjectSelect = (project: { id: string, name: string }) => {
