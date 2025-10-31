@@ -53,7 +53,7 @@ function ProjectFormDialog({
 }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    project: Omit<Project, 'status'> | null;
+    project: Omit<Project, 'status' | 'id'> & { id?: number } | null;
     onSave: (name: string) => void;
 }) {
     const [name, setName] = useState("");
@@ -134,7 +134,7 @@ export default function ReportingView() {
             setProjects(projects.map(p => p.id === editingProject.id ? { ...p, name } : p));
         } else {
             const newProject: Project = {
-                id: Date.now(),
+                id: projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1,
                 name,
                 status: "Development",
             };
