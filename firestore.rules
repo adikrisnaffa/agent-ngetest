@@ -35,23 +35,12 @@ service cloud.firestore {
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/projects/{projectId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if true;
-      allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow read, list: if isOwner(userId);
+      allow write: if isOwner(userId);
     }
 
     /**
@@ -65,23 +54,12 @@ service cloud.firestore {
      * @principle Enforces project-level ownership for object repositories.
      */
     match /users/{userId}/projects/{projectId}/objectRepositories/{objectRepositoryId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
+       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
-        function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-        }
-
-      allow get: if true;
-      allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.projectId == projectId;
-      allow update: if isExistingOwner(userId) && request.resource.data.projectId == projectId;
-      allow delete: if isExistingOwner(userId);
+      allow read, list: if isOwner(userId);
+      allow write: if isOwner(userId);
     }
 
     /**
@@ -95,23 +73,12 @@ service cloud.firestore {
      * @principle Enforces project-level ownership for end-to-end flows.
      */
     match /users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
-        function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-        }
-
-      allow get: if true;
-      allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow read, list: if isOwner(userId);
+      allow write: if isOwner(userId);
     }
 
     /**
@@ -125,23 +92,12 @@ service cloud.firestore {
      * @principle Enforces flow-level ownership for test cases.
      */
     match /users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
-        function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-        }
-
-      allow get: if true;
-      allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow read, list: if isOwner(userId);
+      allow write: if isOwner(userId);
     }
   }
 }

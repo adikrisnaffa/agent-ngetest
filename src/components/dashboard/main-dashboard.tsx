@@ -11,8 +11,8 @@ import { Globe, Loader2, FileSearch, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NodePalette } from "../dashboard/node-palette";
 import { useToast } from "@/hooks/use-toast";
-import { useUser, useFirebase, useDoc, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
-import { doc, collection } from "firebase/firestore";
+import { useUser, useFirebase, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { debounce } from 'lodash';
 
 export type Action = {
@@ -75,7 +75,8 @@ export default function MainDashboard({ selectedProject, onBackToProjects }: Mai
   const debouncedUpdate = useCallback(
     debounce((flowData: Partial<FlowDoc>) => {
       if (flowDocRef) {
-        updateDocumentNonBlocking(flowDocRef, flowData);
+        // Use setDoc with merge to create or update
+        setDocumentNonBlocking(flowDocRef, flowData, { merge: true });
       }
     }, 1000), // Debounce updates by 1 second
     [flowDocRef]
@@ -86,24 +87,27 @@ export default function MainDashboard({ selectedProject, onBackToProjects }: Mai
       setSteps(flowDoc.steps || []);
       setFlowTitle(flowDoc.name || `Flow for ${selectedProject?.name}`);
       setFlowId(flowDoc.id);
-    } else if (selectedProject) {
-      // If no flow doc exists, initialize with default state
+    } else if (!isFlowLoading && selectedProject) {
+      // If no flow doc exists and we are not loading, initialize with default state
       const newTitle = `Flow for ${selectedProject.name}`;
       setFlowTitle(newTitle);
       setSteps([]);
       // Create the document if it doesn't exist.
       if (flowDocRef) {
-         updateDocumentNonBlocking(flowDocRef, { name: newTitle, steps: [] });
+         setDocumentNonBlocking(flowDocRef, { name: newTitle, steps: [] }, { merge: true });
       }
     }
-  }, [flowDoc, selectedProject, flowDocRef]);
+  }, [flowDoc, isFlowLoading, selectedProject, flowDocRef]);
   
   useEffect(() => {
     // When title or steps change, trigger a debounced update to Firestore
     if (!isFlowLoading && flowDocRef) {
-      debouncedUpdate({ name: flowTitle, steps: steps });
+      // Don't save if it's the initial default state before a doc is loaded
+      if (flowDoc || (flowTitle !== "Untitled Flow" && selectedProject)) {
+        debouncedUpdate({ name: flowTitle, steps: steps });
+      }
     }
-  }, [flowTitle, steps, isFlowLoading, debouncedUpdate, flowDocRef]);
+  }, [flowTitle, steps, isFlowLoading, debouncedUpdate, flowDocRef, flowDoc, selectedProject]);
 
 
   const handleAddStep = (type: string, target?: string) => {
@@ -410,5 +414,3 @@ export default function MainDashboard({ selectedProject, onBackToProjects }: Mai
     </div>
   );
 }
-
-    
