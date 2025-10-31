@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InspectorPanel from "./inspector-panel";
 import { Globe, Loader2, FileSearch, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { NodePalette } from "../dashboard/node-palette";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirebase, useDoc, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
@@ -409,3 +410,5 @@ export default function MainDashboard({ selectedProject, onBackToProjects }: Mai
     </div>
   );
 }
+
+    
