@@ -1,151 +1,147 @@
 /**
- * @fileoverview Firestore Security Rules for Automation Agent.
+ * @fileoverview Firestore Security Rules for Automation Aent application.
  *
- * Core Philosophy: This ruleset enforces a strict user-ownership model for all
- * primary data entities (ObjectRepositories, EndToEndFlows, UIElements, Actions,
- * and TestCases). Only the authenticated user who "owns" the data is permitted
- * to read or write it. Session data is handled with specific access control.
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. Each user has full control
+ * over the projects, object repositories, end-to-end flows, and test cases they own.
  *
- * Data Structure: All user-owned data is nested under the /users/{userId}
- * collection. This hierarchical structure simplifies authorization by
- * denormalizing ownership into the document paths. The /sessions/{sessionId}
- * collection stores session information.
+ * Data Structure:
+ * Data is organized hierarchically under /users/{userId}. Projects, object repositories,
+ * end-to-end flows, and test cases are all nested within this structure, enabling
+ * path-based authorization.
  *
  * Key Security Decisions:
- * - User listing is disallowed to prevent unauthorized enumeration of user IDs.
- * - All write operations (create, update, delete) require authentication.
- * - Data validation is relaxed in prototyping mode, focusing on authorization.
- * - Session data is writeable by anyone to start the session, but only updatable for logout.
+ * - Users can only manage data under their own user ID.
+ * - List operations are allowed for owners within their user data tree.
+ * - Data types and schema are not strictly enforced in this prototyping phase,
+ *   except where necessary for authorization and relationship integrity.
+ *
+ * Denormalization for Authorization:
+ * The data structure leverages path-based ownership to simplify security rules,
+ * avoiding the need for additional `get()` calls.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if the user is signed in
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Helper function to check if the authenticated user is the owner of the document
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Helper function to check if the authenticated user is the owner of the document for destructive operations
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
     /**
-     * @description Controls access to object repositories owned by a user.
-     * @path /users/{userId}/objectRepositories/{objectRepositoryId}
-     * @allow (create) User 'user123' can create a new object repository under their own user ID.
-     * @allow (get) User 'user123' can read an object repository under their own user ID.
-     * @allow (list) User 'user123' can list object repositories under their own user ID.
-     * @allow (update) User 'user123' can update an object repository under their own user ID.
-     * @allow (delete) User 'user123' can delete an object repository under their own user ID.
-     * @deny (create) User 'user456' cannot create an object repository under 'user123's user ID.
+     * @description Controls access to Project documents.
+     * @path /users/{userId}/projects/{projectId}
+     * @allow (create) User 'user123' can create a project under their own user ID.
+     * @allow (get) User 'user123' can read a project under their own user ID.
+     * @allow (update) User 'user123' can update a project under their own user ID.
+     * @allow (delete) User 'user123' can delete a project under their own user ID.
+     * @deny (create) User 'user456' cannot create a project under user 'user123''s ID.
      * @principle Enforces document ownership for all operations.
      */
-    match /users/{userId}/objectRepositories/{objectRepositoryId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == objectRepositoryId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
-    }
+    match /users/{userId}/projects/{projectId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-    /**
-     * @description Controls access to UI elements within an object repository.
-     * @path /users/{userId}/objectRepositories/{objectRepositoryId}/uiElements/{uiElementId}
-     * @allow (create) User 'user123' can create a new UI element under their own user ID and a valid object repository.
-     * @allow (get) User 'user123' can read a UI element under their own user ID and a valid object repository.
-     * @allow (list) User 'user123' can list UI elements under their own user ID and a valid object repository.
-     * @allow (update) User 'user123' can update a UI element under their own user ID and a valid object repository.
-     * @allow (delete) User 'user123' can delete a UI element under their own user ID and a valid object repository.
-     * @deny (create) User 'user456' cannot create a UI element under 'user123's user ID.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId}/objectRepositories/{objectRepositoryId}/uiElements/{uiElementId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == uiElementId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
-    }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
 
-    /**
-     * @description Controls access to end-to-end flows created by users.
-     * @path /users/{userId}/endToEndFlows/{endToEndFlowId}
-     * @allow (create) User 'user123' can create a new end-to-end flow under their own user ID.
-     * @allow (get) User 'user123' can read an end-to-end flow under their own user ID.
-     * @allow (list) User 'user123' can list end-to-end flows under their own user ID.
-     * @allow (update) User 'user123' can update an end-to-end flow under their own user ID.
-     * @allow (delete) User 'user123' can delete an end-to-end flow under their own user ID.
-     * @deny (create) User 'user456' cannot create an end-to-end flow under 'user123's user ID.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId}/endToEndFlows/{endToEndFlowId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == endToEndFlowId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
-    }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
 
-    /**
-     * @description Controls access to actions within an end-to-end flow.
-     * @path /users/{userId}/endToEndFlows/{endToEndFlowId}/actions/{actionId}
-     * @allow (create) User 'user123' can create a new action under their own user ID and a valid end-to-end flow.
-     * @allow (get) User 'user123' can read an action under their own user ID and a valid end-to-end flow.
-     * @allow (list) User 'user123' can list actions under their own user ID and a valid end-to-end flow.
-     * @allow (update) User 'user123' can update an action under their own user ID and a valid end-to-end flow.
-     * @allow (delete) User 'user123' can delete an action under their own user ID and a valid end-to-end flow.
-     * @deny (create) User 'user456' cannot create an action under 'user123's user ID.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId}/endToEndFlows/{endToEndFlowId}/actions/{actionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == actionId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Controls access to test cases generated for an end-to-end flow.
-     * @path /users/{userId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId}
-     * @allow (create) User 'user123' can create a new test case under their own user ID and a valid end-to-end flow.
-     * @allow (get) User 'user123' can read a test case under their own user ID and a valid end-to-end flow.
-     * @allow (list) User 'user123' can list test cases under their own user ID and a valid end-to-end flow.
-     * @allow (update) User 'user123' can update a test case under their own user ID and a valid end-to-end flow.
-     * @allow (delete) User 'user123' can delete a test case under their own user ID and a valid end-to-end flow.
-     * @deny (create) User 'user456' cannot create a test case under 'user123's user ID.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == testCaseId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Controls access to session information for users.
-     * @path /sessions/{sessionId}
-     * @allow (create) Any user can create a session to log in
-     * @allow (get) Any user can get a session.
-     * @allow (list) Any user can list sessions.
-     * @allow (update) Only allow update.
-     * @deny (delete) No user can delete.
-     */
-    match /sessions/{sessionId} {
       allow get: if true;
-      allow list: if true;
-      allow create: if true;
-      allow update: if resource.data.login == request.auth.uid;
-      allow delete: if false;
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == projectId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to ObjectRepository documents.
+     * @path /users/{userId}/projects/{projectId}/objectRepositories/{objectRepositoryId}
+     * @allow (create) User 'user123' can create an object repository under their own project.
+     * @allow (get) User 'user123' can read an object repository under their own project.
+     * @allow (update) User 'user123' can update an object repository under their own project.
+     * @allow (delete) User 'user123' can delete an object repository under their own project.
+     * @deny (create) User 'user456' cannot create an object repository under user 'user123''s project.
+     * @principle Enforces project-level ownership for object repositories.
+     */
+    match /users/{userId}/projects/{projectId}/objectRepositories/{objectRepositoryId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+        }
+
+      allow get: if true;
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.projectId == projectId;
+      allow update: if isExistingOwner(userId) && request.resource.data.projectId == projectId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to EndToEndFlow documents.
+     * @path /users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}
+     * @allow (create) User 'user123' can create an end-to-end flow under their own project.
+     * @allow (get) User 'user123' can read an end-to-end flow under their own project.
+     * @allow (update) User 'user123' can update an end-to-end flow under their own project.
+     * @allow (delete) User 'user123' can delete an end-to-end flow under their own project.
+     * @deny (create) User 'user456' cannot create an end-to-end flow under user 'user123''s project.
+     * @principle Enforces project-level ownership for end-to-end flows.
+     */
+    match /users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+        }
+
+      allow get: if true;
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.projectId == projectId;
+      allow update: if isExistingOwner(userId) && request.resource.data.projectId == projectId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to TestCase documents.
+     * @path /users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId}
+     * @allow (create) User 'user123' can create a test case under their own end-to-end flow.
+     * @allow (get) User 'user123' can read a test case under their own end-to-end flow.
+     * @allow (update) User 'user123' can update a test case under their own end-to-end flow.
+     * @allow (delete) User 'user123' can delete a test case under their own end-to-end flow.
+     * @deny (create) User 'user456' cannot create a test case under user 'user123''s end-to-end flow.
+     * @principle Enforces flow-level ownership for test cases.
+     */
+    match /users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+        }
+
+      allow get: if true;
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.endToEndFlowId == endToEndFlowId;
+      allow update: if isExistingOwner(userId) && request.resource.data.endToEndFlowId == resource.data.endToEndFlowId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }

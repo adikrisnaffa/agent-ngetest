@@ -1,193 +1,192 @@
 {
   "entities": {
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a project within the Automation Aent application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Project entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the project."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp indicating when the project was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp indicating when the project was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
     "ObjectRepository": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ObjectRepository",
       "type": "object",
-      "description": "Represents a repository of UI elements and their properties for automated testing.",
+      "description": "Represents an object repository containing UI elements for testing.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Object Repository."
+          "description": "Unique identifier for the ObjectRepository entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N ObjectRepository)"
         },
         "name": {
           "type": "string",
-          "description": "Name of the object repository."
+          "description": "The name of the object repository."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the object repository."
         },
         "elements": {
           "type": "array",
-          "description": "A list of UI elements within the repository.",
+          "description": "Array of UI elements within the object repository.",
           "items": {
             "type": "string"
           }
         },
-        "description": {
+        "createdAt": {
           "type": "string",
-          "description": "A meaningful description for the object repository."
+          "description": "The timestamp indicating when the object repository was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp indicating when the object repository was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
+        "projectId",
         "name",
-        "elements"
-      ]
-    },
-    "UIElement": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UIElement",
-      "type": "object",
-      "description": "Represents a single UI element within an object repository.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UI Element."
-        },
-        "repositoryId": {
-          "type": "string",
-          "description": "Reference to ObjectRepository. (Relationship: ObjectRepository 1:N UIElement)"
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the UI element."
-        },
-        "locator": {
-          "type": "string",
-          "description": "Locator strategy and value (e.g., xpath, CSS selector)."
-        },
-        "elementType": {
-          "type": "string",
-          "description": "Type of the UI element (e.g., button, text field, link)."
-        },
-        "attributes": {
-          "type": "string",
-          "description": "Attributes for the UI element."
-        }
-      },
-      "required": [
-        "id",
-        "repositoryId",
-        "name",
-        "locator"
+        "description",
+        "elements",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "EndToEndFlow": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "EndToEndFlow",
       "type": "object",
-      "description": "Represents an end-to-end flow defined by a sequence of actions.",
+      "description": "Represents an end-to-end flow designed using the drag-and-drop interface.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the End-to-End Flow."
+          "description": "Unique identifier for the EndToEndFlow entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N EndToEndFlow)"
         },
         "name": {
           "type": "string",
-          "description": "Name of the flow."
+          "description": "The name of the end-to-end flow."
         },
         "description": {
           "type": "string",
-          "description": "Description of the flow."
+          "description": "A detailed description of the end-to-end flow."
         },
         "steps": {
           "type": "array",
-          "description": "An ordered list of actions that constitute the flow. References Action Entity",
+          "description": "Array of steps that make up the end-to-end flow.",
           "items": {
             "type": "string"
           }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp indicating when the end-to-end flow was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp indicating when the end-to-end flow was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
+        "projectId",
         "name",
-        "steps"
-      ]
-    },
-    "Action": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Action",
-      "type": "object",
-      "description": "Represents a single action within an end-to-end flow.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Action."
-        },
-        "flowId": {
-          "type": "string",
-          "description": "Reference to EndToEndFlow. (Relationship: EndToEndFlow 1:N Action)"
-        },
-        "type": {
-          "type": "string",
-          "description": "Type of action (e.g., click, type, navigate)."
-        },
-        "targetElementId": {
-          "type": "string",
-          "description": "Reference to UIElement if the action targets a specific UI element. Nullable"
-        },
-        "parameters": {
-          "type": "string",
-          "description": "Parameters for the action (e.g., text to type, URL to navigate to)."
-        }
-      },
-      "required": [
-        "id",
-        "flowId",
-        "type"
+        "description",
+        "steps",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "TestCase": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "TestCase",
       "type": "object",
-      "description": "Represents an automatically generated test case.",
+      "description": "Represents a test case automatically generated from an end-to-end flow.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Test Case."
+          "description": "Unique identifier for the TestCase entity."
         },
-        "flowId": {
+        "endToEndFlowId": {
           "type": "string",
           "description": "Reference to EndToEndFlow. (Relationship: EndToEndFlow 1:N TestCase)"
         },
-        "framework": {
+        "name": {
           "type": "string",
-          "description": "Target testing framework (e.g., Playwright, Cypress, Selenium)."
+          "description": "The name of the test case."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the test case."
+        },
+        "platform": {
+          "type": "string",
+          "description": "The testing platform for which the test case is generated (e.g., Playwright, Cypress, Selenium)."
         },
         "code": {
           "type": "string",
-          "description": "Generated test case code."
+          "description": "The generated test case code."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp indicating when the test case was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp indicating when the test case was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
-        "flowId",
-        "framework",
-        "code"
-      ]
-    },
-    "Session": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Session",
-      "type": "object",
-      "description": "Represents a session of the user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Session."
-        },
-        "login": {
-          "type": "string",
-          "description": "The user name of the session."
-        },
-        "logout": {
-          "type": "string",
-          "description": "Timestamp of when the session ended."
-        }
-      },
-      "required": [
-        "id",
-        "login",
-        "logout"
+        "endToEndFlowId",
+        "name",
+        "description",
+        "platform",
+        "code",
+        "createdAt",
+        "updatedAt"
       ]
     }
   },
@@ -200,134 +199,102 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/objectRepositories/{objectRepositoryId}",
+        "path": "/users/{userId}/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores projects owned by users. Path-based ownership enables simple security rules based on userId and projectId.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the project."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique ID of the project."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/projects/{projectId}/objectRepositories/{objectRepositoryId}",
         "definition": {
           "entityName": "ObjectRepository",
           "schema": {
             "$ref": "#/backend/entities/ObjectRepository"
           },
-          "description": "Stores object repositories owned by a user. Includes denormalized ownership via path.",
+          "description": "Stores object repositories associated with a specific project.  Enables listing object repositories for a given project and enforces project-level authorization based on the user and project IDs.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the object repository."
+              "description": "The ID of the user who owns the project."
+            },
+            {
+              "name": "projectId",
+              "description": "The ID of the project the object repository belongs to."
             },
             {
               "name": "objectRepositoryId",
-              "description": "The ID of the object repository."
+              "description": "The unique ID of the object repository."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/objectRepositories/{objectRepositoryId}/uiElements/{uiElementId}",
-        "definition": {
-          "entityName": "UIElement",
-          "schema": {
-            "$ref": "#/backend/entities/UIElement"
-          },
-          "description": "Stores UI elements belonging to an object repository. Includes denormalized ownership via path.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the UI Element."
-            },
-            {
-              "name": "objectRepositoryId",
-              "description": "The ID of the parent object repository."
-            },
-            {
-              "name": "uiElementId",
-              "description": "The ID of the UI element."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/endToEndFlows/{endToEndFlowId}",
+        "path": "/users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}",
         "definition": {
           "entityName": "EndToEndFlow",
           "schema": {
             "$ref": "#/backend/entities/EndToEndFlow"
           },
-          "description": "Stores end-to-end flows created by users. Includes denormalized ownership via path.",
+          "description": "Stores end-to-end flows associated with a specific project. Enables listing flows for a given project and enforces project-level authorization based on the user and project IDs.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who created the flow."
+              "description": "The ID of the user who owns the project."
+            },
+            {
+              "name": "projectId",
+              "description": "The ID of the project the end-to-end flow belongs to."
             },
             {
               "name": "endToEndFlowId",
-              "description": "The ID of the end-to-end flow."
+              "description": "The unique ID of the end-to-end flow."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/endToEndFlows/{endToEndFlowId}/actions/{actionId}",
-        "definition": {
-          "entityName": "Action",
-          "schema": {
-            "$ref": "#/backend/entities/Action"
-          },
-          "description": "Stores actions within an end-to-end flow. Includes denormalized ownership via path.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the action."
-            },
-            {
-              "name": "endToEndFlowId",
-              "description": "The ID of the parent end-to-end flow."
-            },
-            {
-              "name": "actionId",
-              "description": "The ID of the action."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId}",
+        "path": "/users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId}",
         "definition": {
           "entityName": "TestCase",
           "schema": {
             "$ref": "#/backend/entities/TestCase"
           },
-          "description": "Stores test cases generated for an end-to-end flow. Includes denormalized ownership via path.",
+          "description": "Stores test cases generated from an end-to-end flow. Maintains a clear hierarchy and enables authorization based on the flow and project ownership.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the test case."
+              "description": "The ID of the user who owns the project."
+            },
+            {
+              "name": "projectId",
+              "description": "The ID of the project the end-to-end flow belongs to."
             },
             {
               "name": "endToEndFlowId",
-              "description": "The ID of the parent end-to-end flow."
+              "description": "The ID of the end-to-end flow the test case is generated from."
             },
             {
               "name": "testCaseId",
-              "description": "The ID of the test case."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/sessions/{sessionId}",
-        "definition": {
-          "entityName": "Session",
-          "schema": {
-            "$ref": "#/backend/entities/Session"
-          },
-          "description": "Stores session information for users.",
-          "params": [
-            {
-              "name": "sessionId",
-              "description": "The ID of the session."
+              "description": "The unique ID of the test case."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support the Automation Aent application's core features: Object Repository Builder, End-to-End Flow Builder, and Test Case Auto-Generation. It prioritizes authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` collection, ensuring clear ownership and simplified security rules. Collaborative data, if introduced in the future, would use the Membership Map model within dedicated collections.\n\n**Authorization Independence (Denormalization):**\n*   Object Repositories, UI Elements, End-to-End Flows, Actions and Test Cases are all user-owned. Their paths start with `/users/{userId}` ensuring ownership and eliminating the need for `get()` calls in security rules to verify ownership.\n\n**QAPs (Queries and Permissions):**\n*   **Secure Lists:** The path-based ownership (`/users/{userId}/...`) allows for secure `list` operations.  Rules can easily filter collections based on the `request.auth.uid`.\n*   **Segregation:** Each entity type (ObjectRepository, UIElement, etc.) resides in its own collection under the user's document.  This segregation simplifies rules because each collection has a homogeneous security posture.\n\n**Future Considerations:**\n*   If collaborative features are added (e.g., shared object repositories), a `members` map would be added to the ObjectRepository documents, denormalizing the authorization information for child collections (UIElements)."
+    "reasoning": "The Firestore data structure is designed to support the core features of the Automation Aent application, focusing on object repository building, end-to-end flow design, and automated test case generation. The structure prioritizes authorization independence and simplifies security rules using denormalization. It leverages path-based ownership where applicable.\n\n**Authorization Independence:** Authorization is enforced independently at each level by structuring data in hierarchical paths based on ownership and by including necessary ownership or membership data directly within subcollection documents. This avoids `get()` calls in security rules.\n\n**QAPs (Rules are not Filters):** The data structure supports secure `list` operations by segregating data with different access requirements into distinct collections. For instance, projects are under `/users/{userId}/projects/{projectId}` ensuring only the project owner or members can list projects they have access to.\n\n**Structure Overview:**\n\n*   **`/users/{userId}/projects/{projectId}`**: Projects are nested under user documents. This structure enables simple rules based on the user ID.  All project related data (object repositories, flows, test cases) are stored as subcollections for clear ownership and access control.\n*   **`/users/{userId}/projects/{projectId}/objectRepositories/{objectRepositoryId}`**: Object repositories are subcollections of projects. This allows easy listing of object repositories belonging to a specific project and enforces project-level authorization.\n*   **`/users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}`**: End-to-end flows are stored as subcollections of projects, enabling simple listing and authorization based on project membership.\n*   **`/users/{userId}/projects/{projectId}/endToEndFlows/{endToEndFlowId}/testCases/{testCaseId}`**: Test cases are nested under their respective end-to-end flows. This structure maintains a clear relationship between flows and their generated test cases."
   }
 }
