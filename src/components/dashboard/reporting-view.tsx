@@ -57,7 +57,7 @@ function ProjectFormDialog({
 }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    project: Omit<Project, 'status' | 'createdAt' | 'id'> & { id?: string } | null;
+    project: Omit<Project, 'status' | 'createdAt' > & { id?: string } | null;
     onSave: (name: string) => void;
 }) {
     const [name, setName] = useState("");
@@ -167,10 +167,10 @@ export default function ReportingView() {
     
     const sortedProjects = React.useMemo(() => {
         if (!projects) return [];
-        return [...projects].sort((a, b) => a.id.localeCompare(b.id));
+        return [...projects].sort((a, b) => a.createdAt?.seconds - b.createdAt?.seconds);
     }, [projects]);
 
-    const getProjectNumericId = (id: string, index: number) => {
+    const getProjectNumericId = (project: ProjectWithId, index: number) => {
         // Fallback for older data that might not have a numeric prefix
         return (index + 1).toString().padStart(3, '0');
     }
@@ -240,7 +240,7 @@ export default function ReportingView() {
                                 ) : sortedProjects.length > 0 ? (
                                     sortedProjects.map((project, index) => (
                                     <TableRow key={project.id}>
-                                        <TableCell className="font-medium text-muted-foreground">PROJ-{getProjectNumericId(project.id, index)}</TableCell>
+                                        <TableCell className="font-medium text-muted-foreground">PROJ-{getProjectNumericId(project, index)}</TableCell>
                                         <TableCell className="font-semibold">{project.name}</TableCell>
                                         <TableCell className="text-center">
                                             <DropdownMenu>
@@ -314,5 +314,3 @@ export default function ReportingView() {
         </div>
     );
 }
-
-    

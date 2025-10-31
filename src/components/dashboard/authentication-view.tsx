@@ -29,7 +29,14 @@ export default function AuthenticationView() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAuthAction = async (action: 'signUp' | 'signIn') => {
-    if (!auth) return;
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Service Not Ready",
+            description: "Please wait a moment and try again.",
+        });
+        return;
+    }
     setIsLoading(true);
     try {
       if (action === 'signUp') {

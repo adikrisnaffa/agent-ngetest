@@ -23,7 +23,7 @@ interface HeaderProps {
 
 export default function Header({ onRun, onStop, isRunning }: HeaderProps) {
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const { auth } = useAuth();
 
   const handleLogout = async () => {
     if (auth) {
