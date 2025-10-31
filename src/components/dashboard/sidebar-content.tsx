@@ -63,6 +63,9 @@ export default function SidebarContent({ activeView, setActiveView }: SidebarCon
                 </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
+         <div className="text-center text-xs text-muted-foreground p-2 group-data-[collapsible=icon]:hidden">
+            (c) Tukang Ngetest {new Date().getFullYear()}
+        </div>
       </SidebarFooter>
     </div>
   );
